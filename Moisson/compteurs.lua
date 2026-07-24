@@ -116,15 +116,31 @@ end
 
 -- ----------------------------------------------------------------- comptage --
 
+local function dbg(s)
+	if ns.debugLoot then ns.print("|cff808080[debug]|r " .. s) end
+end
+
 local function OnLoot(msg)
-	if not isSelfLoot(msg) then return end
+	if not isSelfLoot(msg) then
+		dbg("ignoré (pas un butin personnel) : " .. msg)
+		return
+	end
 	local link = msg:match("|Hitem:.-|h.-|h")
-	if not link then return end
+	if not link then
+		dbg("pas de lien d'objet dans : " .. msg)
+		return
+	end
 	local id = tonumber(link:match("item:(%d+)"))
-	if not id then return end
+	if not id then
+		dbg("pas d'itemID dans le lien")
+		return
+	end
 
 	local _, _, _, _, icone, classID, subClassID = GetItemInfoInstant(id)
-	if classID ~= 7 or not CATS[subClassID] then return end
+	if classID ~= 7 or not CATS[subClassID] then
+		dbg(("%s : classe %s/%s → non suivie"):format(link, tostring(classID), tostring(subClassID)))
+		return
+	end
 
 	local qte = tonumber(msg:match("|h|rx(%d+)")) or tonumber(msg:match("x(%d+)%p?$")) or 1
 
@@ -140,6 +156,7 @@ local function OnLoot(msg)
 
 	session[id] = (session[id] or 0) + qte
 	sessionCats[subClassID] = (sessionCats[subClassID] or 0) + qte
+	dbg(("compté : %s x%d (%s)"):format(link, qte, CATS[subClassID].nom))
 
 	Refresh()
 end

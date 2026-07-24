@@ -703,6 +703,9 @@ SlashCmdList["MOISSON"] = function(input)
 		print_("compteurs " .. (db.compteurs and "affichés" or "masqués") .. ".")
 	elseif cmd == "bilan" then
 		if ns.Bilan then ns.Bilan() end
+	elseif cmd == "debug" then
+		ns.debugLoot = not ns.debugLoot
+		print_("debug loot " .. (ns.debugLoot and "activé — ramasse quelque chose et lis le chat" or "désactivé") .. ".")
 	elseif cmd == "raz" then
 		if ns.Raz then ns.Raz(arg == "tout") end
 	else
