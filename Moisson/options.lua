@@ -87,9 +87,9 @@ function ns.InitOptions()
 	-- nouvelle API Settings (1.15) avec repli sur l'ancienne
 	if Settings and Settings.RegisterCanvasLayoutCategory then
 		local cat = Settings.RegisterCanvasLayoutCategory(panel, "Moisson")
-		cat.ID = "Moisson"
 		Settings.RegisterAddOnCategory(cat)
-		ns.OpenOptions = function() Settings.OpenToCategory("Moisson") end
+		-- OpenToCategory exige l'ID numérique attribué par le jeu
+		ns.OpenOptions = function() Settings.OpenToCategory(cat:GetID()) end
 	elseif InterfaceOptions_AddCategory then
 		InterfaceOptions_AddCategory(panel)
 		ns.OpenOptions = function() InterfaceOptionsFrame_OpenToCategory(panel) end

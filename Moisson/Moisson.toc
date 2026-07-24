@@ -2,7 +2,7 @@
 ## Title: Moisson
 ## Notes: HUD de récolte plein écran avec compteurs de farm (session & global). Mécanisme inspiré de FarmHud (Hizuro, GPL) — réécriture complète.
 ## Author: yokoul
-## Version: 0.2.0
+## Version: 0.2.1
 ## SavedVariables: MoissonDB
 ## OptionalDeps: GatherMate2, Questie, ElvUI
 ## X-Credits: Hizuro (FarmHud), pour l'idée du détournement de minimap.
