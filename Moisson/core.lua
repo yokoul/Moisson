@@ -22,7 +22,7 @@ local DEFAUTS = {
 	cardinaux = true,
 	compteurs = true,
 	boutons   = false,
-	combat    = true,  -- masquer le HUD en combat
+	combat    = false, -- masquer le HUD en combat (comme FarmHud : non par défaut)
 	bouton_angle = 200, -- position du bouton minimap
 }
 
@@ -618,6 +618,11 @@ ev:SetScript("OnEvent", function(_, event, arg1)
 			MoissonDB.opts.alpha2 = DEFAUTS.alpha2
 			MoissonDB.opts.echelle = DEFAUTS.echelle
 			MoissonDB.version = 2
+		end
+		-- v3 : le masquage en combat redevient opt-in (comme FarmHud)
+		if MoissonDB.version < 3 then
+			MoissonDB.opts.combat = DEFAUTS.combat
+			MoissonDB.version = 3
 		end
 		db = MoissonDB.opts
 		ns.db = db
