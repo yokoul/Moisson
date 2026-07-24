@@ -1,7 +1,7 @@
 -- Moisson — HUD de récolte plein écran pour WoW Classic Era.
 -- Principe (hommage à FarmHud de Hizuro, réécrit de zéro) : on ne dessine pas
--- de carte, on déplace la vraie Minimap en plein écran, zoom mini, fond quasi
--- transparent. Les pins (GatherMate2, Questie) sont rebranchés sur un calque
+-- de carte, on déplace la vraie Minimap en plein écran, zoom mini, fond
+-- invisible. Les pins (GatherMate2, Questie) sont rebranchés sur un calque
 -- frère « cluster » pour rester opaques pendant que le fond de carte s'efface.
 
 local ADDON, ns = ...
@@ -10,22 +10,26 @@ local Minimap = _G.Minimap
 local MT = getmetatable(Minimap).__index
 local UpdateRotation = _G.Minimap_UpdateRotationSetting or function() end
 
+local DB_VERSION = 2
+
 local DEFAUTS = {
-	taille    = 0.92,  -- fraction du plus petit côté de l'écran
-	alpha     = 0.25,  -- transparence du fond de carte
-	alpha2    = 0.70,  -- alpha alternatif (bouton « fond »)
+	taille    = 0.95,  -- fraction du plus petit côté de l'écran
+	echelle   = 1.4,   -- grossissement des pins (la minimap est réduite puis re-scalée)
+	alpha     = 0,     -- fond de carte invisible : seuls les pins restent
+	alpha2    = 0.5,   -- alpha alternatif (bouton « fond »)
 	rotation  = true,  -- la carte tourne avec le joueur
 	coords    = true,
 	cardinaux = true,
 	compteurs = true,
-	boutons   = true,
+	boutons   = false,
 	combat    = true,  -- masquer le HUD en combat
+	bouton_angle = 200, -- position du bouton minimap
 }
 
 local db                    -- MoissonDB.opts
 local saved                 -- instantané de la minimap à restaurer
 local moved = {}            -- objets parqués sur le leurre
-local coordsTicker, cardsTicker
+local coordsTicker, decorTicker
 local zoomLock = false
 local hiddenByCombat = false
 
@@ -43,6 +47,7 @@ local EXTERNES = {
 
 local hud = CreateFrame("Frame", "MoissonHUD", UIParent)
 hud:Hide()
+hud:EnableMouse(false)
 hud:SetFrameStrata("BACKGROUND")
 hud:SetFrameLevel(2)
 hud:SetPoint("CENTER", WorldFrame, "CENTER")
@@ -54,6 +59,7 @@ ns.hud = hud
 -- frère → l'alpha du fond ne l'affecte pas.
 local cluster = CreateFrame("Frame", "MoissonCluster", hud)
 cluster:SetPoint("CENTER")
+cluster:EnableMouse(false)
 cluster:Hide()
 function cluster:GetZoom() return MT.GetZoom(Minimap) end
 function cluster:SetZoom() end
@@ -66,6 +72,7 @@ leurre:EnableMouse(false)
 
 local texts = CreateFrame("Frame", nil, hud)
 texts:SetAllPoints()
+texts:EnableMouse(false)
 
 local coordsFS = texts:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 coordsFS:SetTextColor(1, 0.82, 0)
@@ -76,6 +83,14 @@ sourisFS:SetText("— SOURIS ACTIVE —")
 sourisFS:SetTextColor(1, 0.3, 0.3)
 sourisFS:SetPoint("CENTER", hud, "CENTER", 0, -24)
 sourisFS:Hide()
+
+-- flèche du joueur au centre (le fond étant invisible, celle de la minimap
+-- disparaît avec lui)
+local fleche = texts:CreateTexture(nil, "OVERLAY")
+fleche:SetSize(26, 26)
+fleche:SetPoint("CENTER")
+fleche:SetTexture("Interface\\Minimap\\MinimapArrow")
+fleche:Hide()
 
 local CARDINAUX = { "N", "NE", "E", "SE", "S", "SO", "O", "NO" }
 local cards = {}
@@ -106,23 +121,31 @@ local function SetScales()
 	local size = math.min(w / e, h / e) * db.taille
 	hud:SetSize(size, size)
 	hud.size = size
-	cluster:SetSize(size, size)
+	-- l'échelle grossit blips et pins : minimap réduite puis re-scalée
+	local reduit = size / db.echelle
+	cluster:SetScale(db.echelle)
+	cluster:SetSize(reduit, reduit)
 	if Minimap:GetParent() == hud then
-		MT.SetSize(Minimap, size, size)
+		MT.SetScale(Minimap, db.echelle)
+		MT.SetSize(Minimap, reduit, reduit)
 	end
 	coordsFS:ClearAllPoints()
 	coordsFS:SetPoint("CENTER", hud, "CENTER", 0, -size * 0.17)
 end
 
-local function UpdateCards()
-	local f = 0
-	if db.rotation then f = GetPlayerFacing() or 0 end
-	local r = hud.size * 0.5 * 0.46
-	for i = 1, 8 do
-		local a = f + (i - 1) * math.pi / 4
-		cards[i]:ClearAllPoints()
-		cards[i]:SetPoint("CENTER", hud, "CENTER", math.sin(a) * r, math.cos(a) * r)
+local function UpdateDecor()
+	local f = GetPlayerFacing() or 0
+	if db.cardinaux then
+		local rot = db.rotation and f or 0
+		local r = hud.size * 0.5 * 0.46
+		for i = 1, 8 do
+			local a = rot + (i - 1) * math.pi / 4
+			cards[i]:ClearAllPoints()
+			cards[i]:SetPoint("CENTER", hud, "CENTER", math.sin(a) * r, math.cos(a) * r)
+		end
 	end
+	-- carte rotative : la flèche pointe en haut ; carte fixe : elle tourne
+	fleche:SetRotation(db.rotation and 0 or f)
 end
 
 local function UpdateCoords()
@@ -235,6 +258,28 @@ end
 
 -- ------------------------------------------------------------------- souris --
 
+-- La minimap plein écran DOIT rester transparente aux clics : c'est elle qui
+-- couvrait tout l'écran quand un addon (ElvUI…) réactivait sa souris.
+local sourisVoulue = false  -- état demandé par l'utilisateur (mode inspection)
+
+local function ForceMouseOff()
+	if Minimap:GetParent() == hud and not sourisVoulue then
+		MT.EnableMouse(Minimap, false)
+		MT.EnableMouseWheel(Minimap, false)
+	end
+end
+
+hooksecurefunc(Minimap, "EnableMouse", function(_, enabled)
+	if enabled and hud:IsShown() and not sourisVoulue then
+		MT.EnableMouse(Minimap, false)
+	end
+end)
+hooksecurefunc(Minimap, "EnableMouseWheel", function(_, enabled)
+	if enabled and hud:IsShown() then
+		MT.EnableMouseWheel(Minimap, false)
+	end
+end)
+
 local function PingClick()
 	local x, y = GetCursorPosition()
 	local s = MT.GetEffectiveScale(Minimap)
@@ -250,6 +295,7 @@ function Moisson_ToggleMouse(force)
 	if Minimap:GetParent() ~= hud then return end
 	local enable
 	if force ~= nil then enable = force else enable = not Minimap:IsMouseEnabled() end
+	sourisVoulue = enable
 	MT.EnableMouse(Minimap, enable)
 	sourisFS:SetShown(enable)
 end
@@ -291,6 +337,8 @@ hud:SetScript("OnShow", function(self)
 		onDown = Minimap:GetScript("OnMouseDown"),
 		onWheel = Minimap:GetScript("OnMouseWheel"),
 		rotate = C_CVar.GetCVar("rotateMinimap"),
+		clusterMouse  = MinimapCluster and MinimapCluster:IsMouseEnabled(),
+		backdropMouse = MinimapBackdrop and MinimapBackdrop:IsMouseEnabled(),
 		points = {},
 	}
 	for i = 1, Minimap:GetNumPoints() do
@@ -326,16 +374,23 @@ hud:SetScript("OnShow", function(self)
 	AnchorMinimap()
 	MT.SetFrameStrata(Minimap, "BACKGROUND")
 	MT.SetFrameLevel(Minimap, 1)
-	MT.SetScale(Minimap, 1)
 	SetScales()
 	MT.SetZoom(Minimap, 0)
 	MT.SetAlpha(Minimap, db.alpha)
 	self.fondAlt = false
+	sourisVoulue = false
 	MT.EnableMouse(Minimap, false)
 	MT.EnableMouseWheel(Minimap, false)
 	MT.SetScript(Minimap, "OnMouseUp", PingClick)
 	MT.SetScript(Minimap, "OnMouseDown", nil)
 	MT.SetScript(Minimap, "OnMouseWheel", nil)
+
+	-- les conteneurs Blizzard ne doivent pas bloquer les clics non plus
+	if MinimapCluster then
+		MinimapCluster:EnableMouse(false)
+		MinimapCluster:EnableMouseWheel(false)
+	end
+	if MinimapBackdrop then MinimapBackdrop:EnableMouse(false) end
 
 	-- 5. rotation façon radar
 	if (saved.rotate == "1") ~= db.rotation then
@@ -350,6 +405,10 @@ hud:SetScript("OnShow", function(self)
 	cluster:Show()
 	ForeignPins(true)
 
+	-- ceinture et bretelles : certains addons réactivent la souris après coup
+	C_Timer.After(0, ForceMouseOff)
+	C_Timer.After(0.5, ForceMouseOff)
+
 	-- 7. habillage
 	if db.coords then
 		coordsFS:Show()
@@ -357,12 +416,11 @@ hud:SetScript("OnShow", function(self)
 		coordsTicker = C_Timer.NewTicker(0.1, UpdateCoords)
 	end
 	if db.cardinaux then
-		UpdateCards()
 		for i = 1, 8 do cards[i]:Show() end
-		if db.rotation then
-			cardsTicker = C_Timer.NewTicker(0.05, UpdateCards)
-		end
 	end
+	fleche:Show()
+	UpdateDecor()
+	decorTicker = C_Timer.NewTicker(0.05, UpdateDecor)
 	self.boutons:SetShown(db.boutons)
 	if ns.CompteursOnShow then ns.CompteursOnShow() end
 end)
@@ -371,10 +429,12 @@ hud:SetScript("OnHide", function(self)
 	if not saved then return end
 
 	if coordsTicker then coordsTicker:Cancel(); coordsTicker = nil end
-	if cardsTicker then cardsTicker:Cancel(); cardsTicker = nil end
+	if decorTicker then decorTicker:Cancel(); decorTicker = nil end
 	coordsFS:Hide()
 	for i = 1, 8 do cards[i]:Hide() end
+	fleche:Hide()
 	sourisFS:Hide()
+	sourisVoulue = false
 
 	ForeignPins(false)
 	cluster:Hide()
@@ -398,6 +458,14 @@ hud:SetScript("OnHide", function(self)
 	MT.SetScript(Minimap, "OnMouseWheel", saved.onWheel)
 	local maxZoom = Minimap:GetZoomLevels()
 	MT.SetZoom(Minimap, math.min(saved.zoom, maxZoom))
+
+	if MinimapCluster then
+		MinimapCluster:EnableMouse(saved.clusterMouse and true or false)
+		MinimapCluster:EnableMouseWheel(saved.clusterMouse and true or false)
+	end
+	if MinimapBackdrop then
+		MinimapBackdrop:EnableMouse(saved.backdropMouse and true or false)
+	end
 
 	if C_CVar.GetCVar("rotateMinimap") ~= saved.rotate then
 		C_CVar.SetCVar("rotateMinimap", saved.rotate)
@@ -447,8 +515,8 @@ NewBouton(-11, "Interface\\WorldMap\\WorldMap-Icon", "Fond de carte", function()
 	hud.fondAlt = not hud.fondAlt
 	MT.SetAlpha(Minimap, hud.fondAlt and db.alpha2 or db.alpha)
 end)
-NewBouton(11, "Interface\\Buttons\\UI-OptionsButton", "Aide (/moisson aide)", function()
-	ns.Aide()
+NewBouton(11, "Interface\\Buttons\\UI-OptionsButton", "Options", function()
+	if ns.OpenOptions then ns.OpenOptions() else ns.Aide() end
 end)
 NewBouton(33, "Interface\\Buttons\\UI-Panel-MinimizeButton-Up", "Fermer", function()
 	Moisson_Toggle(false)
@@ -468,6 +536,61 @@ end
 BINDING_HEADER_MOISSON = "Moisson"
 BINDING_NAME_MOISSON_TOGGLE = "Afficher / masquer le HUD"
 BINDING_NAME_MOISSON_MOUSE = "Basculer la souris (HUD ouvert)"
+
+-- ---------------------------------------------------- application des options --
+
+-- Chaque réglage sait s'appliquer à chaud (partagé slash / panneau d'options).
+ns.Apply = {
+	taille = function(v)
+		db.taille = v
+		if hud:IsShown() then SetScales(); UpdateDecor() end
+	end,
+	echelle = function(v)
+		db.echelle = v
+		if hud:IsShown() then SetScales() end
+	end,
+	alpha = function(v)
+		db.alpha = v
+		if hud:IsShown() and not hud.fondAlt then MT.SetAlpha(Minimap, v) end
+	end,
+	alpha2 = function(v)
+		db.alpha2 = v
+		if hud:IsShown() and hud.fondAlt then MT.SetAlpha(Minimap, v) end
+	end,
+	rotation = function(v)
+		db.rotation = v
+		if hud:IsShown() then hud:Hide(); hud:Show() end
+	end,
+	coords = function(v)
+		db.coords = v
+		if hud:IsShown() then
+			if v then
+				coordsFS:Show()
+				UpdateCoords()
+				coordsTicker = coordsTicker or C_Timer.NewTicker(0.1, UpdateCoords)
+			else
+				if coordsTicker then coordsTicker:Cancel(); coordsTicker = nil end
+				coordsFS:Hide()
+			end
+		end
+	end,
+	cardinaux = function(v)
+		db.cardinaux = v
+		for i = 1, 8 do cards[i]:SetShown(v and hud:IsShown()) end
+		if v and hud:IsShown() then UpdateDecor() end
+	end,
+	compteurs = function(v)
+		db.compteurs = v
+		if hud:IsShown() and ns.CompteursOnShow then ns.CompteursOnShow() end
+	end,
+	boutons = function(v)
+		db.boutons = v
+		if hud:IsShown() then boutons:SetShown(v) end
+	end,
+	combat = function(v)
+		db.combat = v
+	end,
+}
 
 -- ------------------------------------------------------------------ garde-fous --
 
@@ -494,9 +617,19 @@ ev:SetScript("OnEvent", function(_, event, arg1)
 		for k, v in pairs(DEFAUTS) do
 			if MoissonDB.opts[k] == nil then MoissonDB.opts[k] = v end
 		end
+		-- v2 : défauts recalés sur la config FarmHud d'origine (fond invisible,
+		-- pins grossis) — on migre les valeurs posées par la v0.1.0
+		if (MoissonDB.version or 1) < 2 then
+			MoissonDB.opts.alpha = DEFAUTS.alpha
+			MoissonDB.opts.alpha2 = DEFAUTS.alpha2
+			MoissonDB.opts.echelle = DEFAUTS.echelle
+			MoissonDB.version = 2
+		end
 		db = MoissonDB.opts
 		ns.db = db
 		if ns.InitCompteurs then ns.InitCompteurs() end
+		if ns.InitBoutonMinimap then ns.InitBoutonMinimap() end
+		if ns.InitOptions then ns.InitOptions() end
 	elseif event == "PLAYER_LOGOUT" then
 		-- ne pas laisser fuiter la CVar de rotation si on déco HUD ouvert
 		if saved and C_CVar.GetCVar("rotateMinimap") ~= saved.rotate then
@@ -520,9 +653,10 @@ end)
 function ns.Aide()
 	print_("commandes :")
 	print_("  /moisson — afficher/masquer le HUD")
+	print_("  /moisson options — panneau de réglages")
 	print_("  /moisson souris — activer la souris (tooltips des pins)")
 	print_("  /moisson rotation — carte fixe ou rotative")
-	print_("  /moisson taille 0.5–1 · alpha 0–1 — géométrie")
+	print_("  /moisson taille 0.5–1 · echelle 1–2 · alpha 0–1")
 	print_("  /moisson compteurs — panneau de récolte on/off")
 	print_("  /moisson bilan — totaux en chat")
 	print_("  /moisson raz — remise à zéro session (« raz tout » : global)")
@@ -534,34 +668,40 @@ SlashCmdList["MOISSON"] = function(input)
 	local cmd, arg = input:match("^(%S*)%s*(.*)$")
 	if cmd == "" then
 		Moisson_Toggle()
+	elseif cmd == "options" then
+		if ns.OpenOptions then ns.OpenOptions() end
 	elseif cmd == "souris" then
 		Moisson_ToggleMouse()
 	elseif cmd == "rotation" then
-		db.rotation = not db.rotation
+		ns.Apply.rotation(not db.rotation)
 		print_("rotation " .. (db.rotation and "activée" or "désactivée") .. ".")
-		if hud:IsShown() then Moisson_Toggle(false); Moisson_Toggle(true) end
 	elseif cmd == "taille" then
 		local v = tonumber(arg)
 		if v and v >= 0.3 and v <= 1 then
-			db.taille = v
-			if hud:IsShown() then SetScales(); UpdateCards() end
+			ns.Apply.taille(v)
 			print_("taille : " .. v)
 		else
 			print_("taille attendue entre 0.3 et 1.")
 		end
+	elseif cmd == "echelle" then
+		local v = tonumber(arg)
+		if v and v >= 1 and v <= 2 then
+			ns.Apply.echelle(v)
+			print_("échelle des pins : " .. v)
+		else
+			print_("échelle attendue entre 1 et 2.")
+		end
 	elseif cmd == "alpha" then
 		local v = tonumber(arg)
 		if v and v >= 0 and v <= 1 then
-			db.alpha = v
-			if hud:IsShown() then MT.SetAlpha(Minimap, v) end
+			ns.Apply.alpha(v)
 			print_("alpha : " .. v)
 		else
 			print_("alpha attendu entre 0 et 1.")
 		end
 	elseif cmd == "compteurs" then
-		db.compteurs = not db.compteurs
+		ns.Apply.compteurs(not db.compteurs)
 		print_("compteurs " .. (db.compteurs and "affichés" or "masqués") .. ".")
-		if ns.CompteursOnShow and hud:IsShown() then ns.CompteursOnShow() end
 	elseif cmd == "bilan" then
 		if ns.Bilan then ns.Bilan() end
 	elseif cmd == "raz" then

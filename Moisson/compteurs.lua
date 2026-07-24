@@ -63,10 +63,8 @@ local function BuildPanel()
 	panel:Hide()
 end
 
-local function Refresh()
-	if not panel or not panel:IsShown() then return end
-
-	-- résumé par catégorie (session)
+-- résumé de session par catégorie (partagé avec le tooltip du bouton minimap)
+function ns.SessionResume()
 	local resume = {}
 	for _, sub in ipairs(ORDRE_CATS) do
 		local n = sessionCats[sub]
@@ -74,8 +72,13 @@ local function Refresh()
 			resume[#resume + 1] = "|T" .. CATS[sub].icone .. ":14|t " .. n
 		end
 	end
-	panel.resume:SetText(#resume > 0 and table.concat(resume, "   ")
-		or "|cff808080rien cette session|r")
+	if #resume > 0 then return table.concat(resume, "   ") end
+end
+
+local function Refresh()
+	if not panel or not panel:IsShown() then return end
+
+	panel.resume:SetText(ns.SessionResume() or "|cff808080rien cette session|r")
 
 	-- lignes par objet, triées par récolte de session
 	local tri = {}
