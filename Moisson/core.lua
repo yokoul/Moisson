@@ -30,7 +30,6 @@ local db                    -- MoissonDB.opts
 local saved                 -- instantané de la minimap à restaurer
 local moved = {}            -- objets parqués sur le leurre
 local coordsTicker, decorTicker
-local zoomLock = false
 local hiddenByCombat = false
 
 -- Frames anchorées à la minimap sans en être filles (ElvUI & Blizzard).
@@ -376,6 +375,10 @@ hud:SetScript("OnShow", function(self)
 	MT.SetFrameLevel(Minimap, 1)
 	SetScales()
 	MT.SetZoom(Minimap, 0)
+	-- SetZoom devient un no-op : fige le zoom sans casser les « danses de
+	-- zoom » (Questie sonde l'intérieur/extérieur par SetZoom ±1 successifs)
+	saved.setZoomMember = rawget(Minimap, "SetZoom")
+	Minimap.SetZoom = function() end
 	MT.SetAlpha(Minimap, db.alpha)
 	self.fondAlt = false
 	sourisVoulue = false
@@ -456,6 +459,7 @@ hud:SetScript("OnHide", function(self)
 	MT.SetScript(Minimap, "OnMouseUp", saved.onUp)
 	MT.SetScript(Minimap, "OnMouseDown", saved.onDown)
 	MT.SetScript(Minimap, "OnMouseWheel", saved.onWheel)
+	Minimap.SetZoom = saved.setZoomMember -- nil → retour à la métatable
 	local maxZoom = Minimap:GetZoomLevels()
 	MT.SetZoom(Minimap, math.min(saved.zoom, maxZoom))
 
@@ -491,6 +495,7 @@ boutons:SetSize(1, 1)
 boutons:SetPoint("CENTER", hud, "CENTER", 0, -60)
 boutons:Hide()
 hud.boutons = boutons
+ns.boutonsRow = boutons -- le panneau des compteurs se l'annexe (rangée discrète)
 
 local function NewBouton(offsetX, texture, tooltip, onClick)
 	local b = CreateFrame("Button", nil, boutons)
@@ -591,17 +596,6 @@ ns.Apply = {
 		db.combat = v
 	end,
 }
-
--- ------------------------------------------------------------------ garde-fous --
-
--- Quoi qu'il arrive, zoom 0 tant que le HUD est ouvert (molette ElvUI, etc.)
-hooksecurefunc(Minimap, "SetZoom", function(_, level)
-	if hud:IsShown() and not zoomLock and level ~= 0 then
-		zoomLock = true
-		MT.SetZoom(Minimap, 0)
-		zoomLock = false
-	end
-end)
 
 -- ------------------------------------------------------------------- events --
 

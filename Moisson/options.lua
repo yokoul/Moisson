@@ -28,7 +28,7 @@ function ns.InitOptions()
 
 	local sousTitre = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	sousTitre:SetPoint("TOPLEFT", titre, "BOTTOMLEFT", 0, -4)
-	sousTitre:SetText("Raccourcis clavier : Options → Raccourcis clavier → AddOns → Moisson.  En jeu : /moisson aide")
+	sousTitre:SetText("Raccourcis définissables ci-dessous.  En jeu : /moisson aide")
 
 	local prev = sousTitre
 	for _, def in ipairs(COCHES) do
@@ -68,9 +68,54 @@ function ns.InitOptions()
 		prevSlider = s
 	end
 
+	-- ---- raccourcis clavier, définissables directement ici ----
+
+	local function BindButton(command, label, anchorTo, offsetY)
+		local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+		b:SetSize(300, 22)
+		b:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", 0, offsetY)
+		local function refresh()
+			local key = GetBindingKey(command)
+			b:SetText(label .. " : " .. (key and GetBindingText(key) or "|cff808080non défini|r"))
+		end
+		b:SetScript("OnClick", function(self)
+			if self.ecoute then return end
+			self.ecoute = true
+			self:SetText(label .. " : |cffffd200appuie sur une touche…|r (Échap : effacer)")
+			self:EnableKeyboard(true)
+			self:SetScript("OnKeyDown", function(self, key)
+				if key == "LSHIFT" or key == "RSHIFT" or key == "LCTRL" or key == "RCTRL"
+				or key == "LALT" or key == "RALT" or key == "UNKNOWN" then
+					return
+				end
+				if key == "ESCAPE" then
+					local old = GetBindingKey(command)
+					if old then SetBinding(old) end
+				else
+					local combo = (IsAltKeyDown() and "ALT-" or "")
+						.. (IsControlKeyDown() and "CTRL-" or "")
+						.. (IsShiftKeyDown() and "SHIFT-" or "")
+						.. key
+					SetBinding(combo, command)
+				end
+				SaveBindings(GetCurrentBindingSet())
+				self.ecoute = false
+				self:EnableKeyboard(false)
+				self:SetScript("OnKeyDown", nil)
+				refresh()
+			end)
+		end)
+		panel:HookScript("OnShow", refresh)
+		refresh()
+		return b
+	end
+
+	local bindHud = BindButton("MOISSON_TOGGLE", "Ouvrir / fermer le HUD", prevSlider, -32)
+	local bindSouris = BindButton("MOISSON_MOUSE", "Basculer la souris", bindHud, -6)
+
 	local razSession = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 	razSession:SetSize(160, 22)
-	razSession:SetPoint("TOPLEFT", prevSlider, "BOTTOMLEFT", -8, -32)
+	razSession:SetPoint("TOPLEFT", bindSouris, "BOTTOMLEFT", 0, -24)
 	razSession:SetText("RàZ compteurs session")
 	razSession:SetScript("OnClick", function() if ns.Raz then ns.Raz(false) end end)
 

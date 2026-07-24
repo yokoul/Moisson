@@ -47,6 +47,13 @@ local function BuildPanel()
 	panel.titre:SetPoint("TOPLEFT")
 	panel.titre:SetText("|cff7fbf3fRécolte|r  |cff808080session · total|r")
 
+	-- la rangée de mini-boutons du HUD vit au-dessus du panneau, pas au
+	-- milieu de la vue
+	if ns.boutonsRow then
+		ns.boutonsRow:ClearAllPoints()
+		ns.boutonsRow:SetPoint("BOTTOMLEFT", panel, "TOPLEFT", 44, 10)
+	end
+
 	panel.resume = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	panel.resume:SetPoint("TOPLEFT", panel.titre, "BOTTOMLEFT", 0, -4)
 	panel.resume:SetJustifyH("LEFT")
