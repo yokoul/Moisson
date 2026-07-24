@@ -1,0 +1,8 @@
+<Bindings>
+	<Binding name="MOISSON_TOGGLE" header="MOISSON">
+		Moisson_Toggle()
+	</Binding>
+	<Binding name="MOISSON_MOUSE">
+		Moisson_ToggleMouse()
+	</Binding>
+</Bindings>
