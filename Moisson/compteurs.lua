@@ -4,6 +4,10 @@
 
 local ADDON, ns = ...
 
+-- les globales historiques ont été retirées du client 1.15 → API C_Item
+local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
+local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
+
 -- sous-classes de « Trade Goods » en Classic Era
 local CATS = {
 	[9]  = { nom = "Herbes",        icone = "Interface\\Icons\\Trade_Herbalism" },
