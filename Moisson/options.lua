@@ -12,10 +12,11 @@ local COCHES = {
 }
 
 local CURSEURS = {
-	{ cle = "taille",  txt = "Taille du HUD",        min = 0.5, max = 1,   pas = 0.05 },
-	{ cle = "echelle", txt = "Grossissement des pins", min = 1,  max = 2,   pas = 0.1 },
-	{ cle = "alpha",   txt = "Fond de carte",         min = 0,   max = 1,   pas = 0.05 },
-	{ cle = "alpha2",  txt = "Fond alternatif",       min = 0,   max = 1,   pas = 0.05 },
+	{ cle = "taille",    txt = "Taille du HUD",            min = 0.5, max = 1.2, pas = 0.05 },
+	{ cle = "echelle",   txt = "Grossissement des pins",   min = 1,   max = 2,   pas = 0.1 },
+	{ cle = "alpha",     txt = "Fond de carte",            min = 0,   max = 1,   pas = 0.05 },
+	{ cle = "alpha2",    txt = "Fond alternatif",          min = 0,   max = 1,   pas = 0.05 },
+	{ cle = "cardalpha", txt = "Opacité des cardinaux",    min = 0,   max = 1,   pas = 0.05 },
 }
 
 function ns.InitOptions()

@@ -206,6 +206,10 @@ function ns.InitCompteurs()
 	local ev = CreateFrame("Frame")
 	ev:RegisterEvent("CHAT_MSG_LOOT")
 	ev:SetScript("OnEvent", function(_, _, msg)
-		OnLoot(msg)
+		-- toute erreur remonte en chat : BugSack & co avalent les erreurs Lua
+		local ok, err = pcall(OnLoot, msg)
+		if not ok then
+			ns.print("|cffff4040erreur compteur :|r " .. tostring(err))
+		end
 	end)
 end

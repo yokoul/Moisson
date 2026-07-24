@@ -20,6 +20,7 @@ local DEFAUTS = {
 	rotation  = true,  -- la carte tourne avec le joueur
 	coords    = true,
 	cardinaux = true,
+	cardalpha = 0.5,   -- transparence des points cardinaux
 	compteurs = true,
 	boutons   = false,
 	combat    = false, -- masquer le HUD en combat (comme FarmHud : non par défaut)
@@ -117,7 +118,8 @@ ns.print = print_
 local function SetScales()
 	local e = UIParent:GetEffectiveScale()
 	local w, h = WorldFrame:GetSize()
-	local size = math.min(w / e, h / e) * db.taille
+	hud.smin = math.min(w / e, h / e) -- petit côté de l'écran, en unités UI
+	local size = hud.smin * db.taille
 	hud:SetSize(size, size)
 	hud.size = size
 	-- l'échelle grossit blips et pins : minimap réduite puis re-scalée
@@ -136,7 +138,8 @@ local function UpdateDecor()
 	local f = GetPlayerFacing() or 0
 	if db.cardinaux then
 		local rot = db.rotation and f or 0
-		local r = hud.size * 0.5 * 0.46
+		-- anneau proche du bord du HUD, borné pour rester visible à l'écran
+		local r = math.min(hud.size * 0.46, (hud.smin or hud.size) * 0.48)
 		for i = 1, 8 do
 			local a = rot + (i - 1) * math.pi / 4
 			cards[i]:ClearAllPoints()
@@ -419,7 +422,10 @@ hud:SetScript("OnShow", function(self)
 		coordsTicker = C_Timer.NewTicker(0.1, UpdateCoords)
 	end
 	if db.cardinaux then
-		for i = 1, 8 do cards[i]:Show() end
+		for i = 1, 8 do
+			cards[i]:SetAlpha(db.cardalpha)
+			cards[i]:Show()
+		end
 	end
 	fleche:Show()
 	UpdateDecor()
@@ -584,6 +590,10 @@ ns.Apply = {
 		for i = 1, 8 do cards[i]:SetShown(v and hud:IsShown()) end
 		if v and hud:IsShown() then UpdateDecor() end
 	end,
+	cardalpha = function(v)
+		db.cardalpha = v
+		for i = 1, 8 do cards[i]:SetAlpha(v) end
+	end,
 	compteurs = function(v)
 		db.compteurs = v
 		if hud:IsShown() and ns.CompteursOnShow then ns.CompteursOnShow() end
@@ -655,7 +665,7 @@ function ns.Aide()
 	print_("  /moisson options — panneau de réglages")
 	print_("  /moisson souris — activer la souris (tooltips des pins)")
 	print_("  /moisson rotation — carte fixe ou rotative")
-	print_("  /moisson taille 0.5–1 · echelle 1–2 · alpha 0–1")
+	print_("  /moisson taille 0.3–1.2 · echelle 1–2 · alpha 0–1 · cardalpha 0–1")
 	print_("  /moisson compteurs — panneau de récolte on/off")
 	print_("  /moisson bilan — totaux en chat")
 	print_("  /moisson raz — remise à zéro session (« raz tout » : global)")
@@ -676,11 +686,19 @@ SlashCmdList["MOISSON"] = function(input)
 		print_("rotation " .. (db.rotation and "activée" or "désactivée") .. ".")
 	elseif cmd == "taille" then
 		local v = tonumber(arg)
-		if v and v >= 0.3 and v <= 1 then
+		if v and v >= 0.3 and v <= 1.2 then
 			ns.Apply.taille(v)
 			print_("taille : " .. v)
 		else
-			print_("taille attendue entre 0.3 et 1.")
+			print_("taille attendue entre 0.3 et 1.2.")
+		end
+	elseif cmd == "cardalpha" then
+		local v = tonumber(arg)
+		if v and v >= 0 and v <= 1 then
+			ns.Apply.cardalpha(v)
+			print_("transparence des cardinaux : " .. v)
+		else
+			print_("valeur attendue entre 0 et 1.")
 		end
 	elseif cmd == "echelle" then
 		local v = tonumber(arg)
