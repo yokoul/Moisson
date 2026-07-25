@@ -100,7 +100,7 @@ coordsFS:SetTextColor(1, 0.82, 0)
 coordsFS:Hide()
 
 local sourisFS = texts:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-sourisFS:SetText("— SOURIS ACTIVE —")
+sourisFS:SetText("— SOURIS ACTIVE —\n|cffcccccc(survol des points et pins : identification)|r")
 sourisFS:SetTextColor(1, 0.3, 0.3)
 sourisFS:SetPoint("CENTER", hud, "CENTER", 0, -24)
 sourisFS:Hide()
@@ -265,7 +265,14 @@ local function ForeignPins(state)
 	if GM2 and GM2.GetModule then
 		local display = GM2:GetModule("Display", true)
 		if display and display.ReparentMinimapPins then
+			-- GM2 rabaisse le GameTooltip au niveau du nouveau parent (+2) :
+			-- sur le cluster (niveau 5) les tooltips passeraient sous d'autres
+			-- frames — on restaure le niveau derrière lui.
+			local niveau = GameTooltip:GetFrameLevel()
 			display:ReparentMinimapPins(map)
+			if GameTooltip:GetFrameLevel() < niveau then
+				GameTooltip:SetFrameLevel(niveau)
+			end
 		end
 	end
 	if LibStub then

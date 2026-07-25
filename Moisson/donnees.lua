@@ -108,6 +108,7 @@ ajoute("cuirs", {
 	5785,  -- Ecailles de murloc épaisses
 	8154,  -- Ecaille de scorpide
 	15408, -- Ecaille de scorpide épaisse
+	8167,  -- Ecaille de tortue
 })
 
 ajoute("tissus", {
@@ -134,6 +135,14 @@ ajoute("viandes", {
 	5467,  -- Viande de kodo
 	5471,  -- Viande de cerf
 	12037, -- Viande mystère
+	4555,  -- Epaisse queue écailleuse
+	7974,  -- Chair de palourde piquante
+	4655,  -- Chair de palourde géante
+	4603,  -- Jaune-queue tacheté cru
+	6289,  -- Lutjan à longue mâchoire cru
+	6291,  -- Goujon brillant cru
+	6303,  -- Maquereau ombré cru
+	6317,  -- Furie du loch crue
 })
 
 ajoute("elems", {
