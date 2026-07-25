@@ -1,4 +1,6 @@
 -- Moisson — panneau d'options dans l'interface (Options → AddOns → Moisson).
+-- Le contenu dépasse la hauteur du canevas Blizzard : tout vit dans un
+-- ScrollFrame, seule la molette/l'ascenseur bouge.
 
 local ADDON, ns = ...
 
@@ -23,17 +25,25 @@ function ns.InitOptions()
 	local panel = CreateFrame("Frame")
 	panel.name = "Moisson"
 
-	local titre = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+	local scroll = CreateFrame("ScrollFrame", "MoissonOptionsScroll", panel, "UIPanelScrollFrameTemplate")
+	scroll:SetPoint("TOPLEFT", 4, -4)
+	scroll:SetPoint("BOTTOMRIGHT", -26, 4)
+
+	local content = CreateFrame("Frame", nil, scroll)
+	content:SetSize(560, 760)
+	scroll:SetScrollChild(content)
+
+	local titre = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	titre:SetPoint("TOPLEFT", 16, -16)
 	titre:SetText("|cff7fbf3fMoisson|r — HUD de récolte")
 
-	local sousTitre = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	local sousTitre = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	sousTitre:SetPoint("TOPLEFT", titre, "BOTTOMLEFT", 0, -4)
 	sousTitre:SetText("Raccourcis définissables ci-dessous.  En jeu : /moisson aide")
 
 	local prev = sousTitre
 	for _, def in ipairs(COCHES) do
-		local cb = CreateFrame("CheckButton", "MoissonOpt_" .. def.cle, panel, "UICheckButtonTemplate")
+		local cb = CreateFrame("CheckButton", "MoissonOpt_" .. def.cle, content, "UICheckButtonTemplate")
 		cb:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -8)
 		cb:SetSize(24, 24)
 		_G[cb:GetName() .. "Text"]:SetText(def.txt)
@@ -46,7 +56,7 @@ function ns.InitOptions()
 
 	local prevSlider
 	for i, def in ipairs(CURSEURS) do
-		local s = CreateFrame("Slider", "MoissonCurseur_" .. def.cle, panel, "OptionsSliderTemplate")
+		local s = CreateFrame("Slider", "MoissonCurseur_" .. def.cle, content, "OptionsSliderTemplate")
 		if i == 1 then
 			s:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 8, -32)
 		else
@@ -72,7 +82,7 @@ function ns.InitOptions()
 	-- ---- raccourcis clavier, définissables directement ici ----
 
 	local function BindButton(command, label, anchorTo, offsetY)
-		local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+		local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
 		b:SetSize(300, 22)
 		b:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", 0, offsetY)
 		local function refresh()
@@ -115,20 +125,20 @@ function ns.InitOptions()
 	local bindSouris = BindButton("MOISSON_MOUSE", "Basculer la souris", bindHud, -6)
 	local bindFond = BindButton("MOISSON_FOND", "Basculer le fond de carte", bindSouris, -6)
 
-	local razSession = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+	local razSession = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
 	razSession:SetSize(160, 22)
 	razSession:SetPoint("TOPLEFT", bindFond, "BOTTOMLEFT", 0, -24)
 	razSession:SetText("RàZ compteurs session")
 	razSession:SetScript("OnClick", function() if ns.Raz then ns.Raz(false) end end)
 
-	local razTout = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+	local razTout = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
 	razTout:SetSize(160, 22)
 	razTout:SetPoint("LEFT", razSession, "RIGHT", 8, 0)
 	razTout:SetText("RàZ tout (global)")
 	razTout:SetScript("OnClick", function() if ns.Raz then ns.Raz(true) end end)
 
-	local credits = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	credits:SetPoint("BOTTOMLEFT", 16, 16)
+	local credits = content:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	credits:SetPoint("TOPLEFT", razSession, "BOTTOMLEFT", 0, -24)
 	credits:SetText("Mécanisme inspiré de FarmHud (Hizuro) — réécriture yokoul.")
 
 	-- nouvelle API Settings (1.15) avec repli sur l'ancienne

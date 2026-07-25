@@ -1,6 +1,8 @@
 -- Moisson — compteurs de récolte (le différenciateur maison).
 -- On écoute les messages de butin personnels, on ne retient que les
--- marchandises de farm (classID 7) et on cumule par objet : session + global.
+-- marchandises de farm et on cumule par objet : session + global. Un volet
+-- « besace » montre en plus ce que les sacs contiennent pour le(s) métier(s)
+-- de récolte du personnage.
 
 local ADDON, ns = ...
 
@@ -8,20 +10,32 @@ local ADDON, ns = ...
 local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
 local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
 
--- sous-classes de « Trade Goods » en Classic Era
+-- catégories de farm : sous-classes « Trade Goods » (classID 7) + gemmes
+-- (classID 3). Toute sous-classe 7 imprévue tombe dans « autres » plutôt que
+-- d'être jetée : si le client Era classe autrement, on compte quand même.
 local CATS = {
-	[9]  = { nom = "Herbes",        icone = "Interface\\Icons\\Trade_Herbalism" },
-	[7]  = { nom = "Minerais",      icone = "Interface\\Icons\\Trade_Mining" },
-	[6]  = { nom = "Cuirs",         icone = "Interface\\Icons\\INV_Misc_LeatherScrap_02" },
-	[5]  = { nom = "Tissus",        icone = "Interface\\Icons\\INV_Fabric_Linen_01" },
-	[8]  = { nom = "Viandes",       icone = "Interface\\Icons\\INV_Misc_Food_14" },
-	[10] = { nom = "Élémentaires",  icone = "Interface\\Icons\\INV_Stone_05" },
+	herbes   = { nom = "Herbes",       icone = "Interface\\Icons\\Trade_Herbalism" },
+	minerais = { nom = "Minerais",     icone = "Interface\\Icons\\Trade_Mining" },
+	gemmes   = { nom = "Gemmes",       icone = "Interface\\Icons\\INV_Misc_Gem_01" },
+	cuirs    = { nom = "Cuirs",        icone = "Interface\\Icons\\INV_Misc_LeatherScrap_02" },
+	tissus   = { nom = "Tissus",       icone = "Interface\\Icons\\INV_Fabric_Linen_01" },
+	viandes  = { nom = "Viandes",      icone = "Interface\\Icons\\INV_Misc_Food_14" },
+	elems    = { nom = "Élémentaires", icone = "Interface\\Icons\\INV_Stone_05" },
+	autres   = { nom = "Autres",       icone = "Interface\\Icons\\INV_Misc_Bag_08" },
 }
-local ORDRE_CATS = { 9, 7, 6, 5, 8, 10 }
+local ORDRE_CATS = { "herbes", "minerais", "gemmes", "cuirs", "tissus", "viandes", "elems", "autres" }
+local SUB7 = { [9] = "herbes", [7] = "minerais", [6] = "cuirs", [5] = "tissus",
+	[8] = "viandes", [10] = "elems" }
+
+local function Categorie(classID, subClassID)
+	if classID == 7 then return SUB7[subClassID] or "autres" end
+	if classID == 3 then return "gemmes" end
+end
 
 local session = {}      -- [itemID] = quantité depuis la connexion
-local sessionCats = {}  -- [subClassID] = quantité
+local sessionCats = {}  -- [cat] = quantité
 local MAX_LIGNES = 10
+local MAX_SACS = 8
 
 -- préfixes localisés des messages de butin personnels (« Vous recevez… »)
 local prefixes = {}
@@ -38,13 +52,100 @@ local function isSelfLoot(msg)
 	return false
 end
 
+-- ------------------------------------------------------------------ journal --
+
+-- Trace persistante (SavedVariables) des derniers messages de butin et de la
+-- décision prise : lisible après /reload même si personne ne regardait le
+-- chat. /moisson journal pour l'afficher en jeu.
+local MAX_JOURNAL = 30
+
+local function journal(s)
+	local j = MoissonDB and MoissonDB.journal
+	if not j then return end
+	j[#j + 1] = date("%H:%M:%S ") .. s
+	while #j > MAX_JOURNAL do table.remove(j, 1) end
+end
+
+local function dbg(s)
+	journal(s)
+	if ns.debugLoot then ns.print("|cff808080[debug]|r " .. s) end
+end
+
+function ns.Journal()
+	local j = MoissonDB.journal
+	if not j or #j == 0 then
+		ns.print("journal vide — aucun CHAT_MSG_LOOT tracé pour l'instant.")
+		return
+	end
+	ns.print("journal des butins (" .. #j .. ") :")
+	for _, ligne in ipairs(j) do
+		ns.print("  " .. ligne)
+	end
+end
+
+-- ------------------------------------------------------- métiers de récolte --
+
+-- rangs Apprenti/Compagnon/Expert/Artisan de chaque métier de récolte
+local PROFS = {
+	{ sorts = { 2366, 2368, 3570, 11993 }, cats = { herbes = true } },                  -- herboristerie
+	{ sorts = { 2575, 2576, 3564, 10248 }, cats = { minerais = true, gemmes = true } }, -- minage
+	{ sorts = { 8613, 8617, 8618, 10768 }, cats = { cuirs = true } },                   -- dépeçage
+}
+
+local function CatsBesace()
+	local connu = IsPlayerSpell or IsSpellKnown
+	if not connu then return end
+	local voulu
+	for _, prof in ipairs(PROFS) do
+		for _, sort in ipairs(prof.sorts) do
+			if connu(sort) then
+				voulu = voulu or {}
+				for c in pairs(prof.cats) do voulu[c] = true end
+				break
+			end
+		end
+	end
+	return voulu
+end
+
+local function ScanBesace(voulu)
+	local totaux = {} -- [itemID] = { n, icone, cat }
+	for sac = 0, 4 do
+		local slots = (C_Container and C_Container.GetContainerNumSlots(sac))
+			or (GetContainerNumSlots and GetContainerNumSlots(sac)) or 0
+		for slot = 1, slots do
+			local id, n
+			if C_Container and C_Container.GetContainerItemInfo then
+				local info = C_Container.GetContainerItemInfo(sac, slot)
+				if info then id, n = info.itemID, info.stackCount end
+			elseif GetContainerItemInfo then
+				local _, count, _, _, _, _, _, _, _, itemID = GetContainerItemInfo(sac, slot)
+				id, n = itemID, count
+			end
+			if id then
+				local _, _, _, _, icone, classID, subClassID = GetItemInfoInstant(id)
+				local cat = Categorie(classID, subClassID)
+				if cat and voulu[cat] then
+					local t = totaux[id]
+					if not t then
+						t = { n = 0, icone = icone, cat = cat }
+						totaux[id] = t
+					end
+					t.n = t.n + (n or 1)
+				end
+			end
+		end
+	end
+	return totaux
+end
+
 -- ------------------------------------------------------------------ panneau --
 
 local panel  -- construit paresseusement (a besoin de ns.hud)
 
 local function BuildPanel()
 	panel = CreateFrame("Frame", "MoissonCompteurs", ns.hud)
-	panel:SetSize(240, 20 + MAX_LIGNES * 18)
+	panel:SetSize(260, 20 + MAX_LIGNES * 18 + 30 + MAX_SACS * 18)
 	panel:SetPoint("LEFT", ns.hud, "LEFT", 24, 0)
 
 	panel.titre = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -71,16 +172,30 @@ local function BuildPanel()
 		panel.lignes[i] = fs
 		prev = fs
 	end
+
+	panel.sacTitre = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	panel.sacTitre:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -12)
+	panel.sacTitre:SetText("|cff7fbf3fBesace|r  |cff808080selon le métier|r")
+
+	panel.sacLignes = {}
+	prev = panel.sacTitre
+	for i = 1, MAX_SACS do
+		local fs = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+		fs:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, i == 1 and -6 or -4)
+		fs:SetJustifyH("LEFT")
+		panel.sacLignes[i] = fs
+		prev = fs
+	end
 	panel:Hide()
 end
 
 -- résumé de session par catégorie (partagé avec le tooltip du bouton minimap)
 function ns.SessionResume()
 	local resume = {}
-	for _, sub in ipairs(ORDRE_CATS) do
-		local n = sessionCats[sub]
+	for _, cat in ipairs(ORDRE_CATS) do
+		local n = sessionCats[cat]
 		if n and n > 0 then
-			resume[#resume + 1] = "|T" .. CATS[sub].icone .. ":14|t " .. n
+			resume[#resume + 1] = "|T" .. CATS[cat].icone .. ":14|t " .. n
 		end
 	end
 	if #resume > 0 then return table.concat(resume, "   ") end
@@ -114,11 +229,38 @@ local function Refresh()
 	end
 end
 
--- ----------------------------------------------------------------- comptage --
+local function RefreshBesace()
+	if not panel or not panel:IsShown() then return end
 
-local function dbg(s)
-	if ns.debugLoot then ns.print("|cff808080[debug]|r " .. s) end
+	local voulu = CatsBesace()
+	if not voulu then
+		-- pas de métier de récolte connu : le volet se tait
+		panel.sacTitre:Hide()
+		for i = 1, MAX_SACS do panel.sacLignes[i]:Hide() end
+		return
+	end
+	panel.sacTitre:Show()
+
+	local totaux = ScanBesace(voulu)
+	local tri = {}
+	for id, t in pairs(totaux) do
+		tri[#tri + 1] = { id = id, n = t.n, icone = t.icone }
+	end
+	table.sort(tri, function(a, b) return a.n > b.n end)
+
+	for i = 1, MAX_SACS do
+		local fs, item = panel.sacLignes[i], tri[i]
+		if item then
+			local nom = GetItemInfo(item.id) or ("objet " .. item.id)
+			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r  %s", item.icone, item.n, nom)
+			fs:Show()
+		else
+			fs:Hide()
+		end
+	end
 end
+
+-- ----------------------------------------------------------------- comptage --
 
 local function OnLoot(msg)
 	if not isSelfLoot(msg) then
@@ -132,12 +274,13 @@ local function OnLoot(msg)
 	end
 	local id = tonumber(link:match("item:(%d+)"))
 	if not id then
-		dbg("pas d'itemID dans le lien")
+		dbg("pas d'itemID dans le lien : " .. msg)
 		return
 	end
 
 	local _, _, _, _, icone, classID, subClassID = GetItemInfoInstant(id)
-	if classID ~= 7 or not CATS[subClassID] then
+	local cat = Categorie(classID, subClassID)
+	if not cat then
 		dbg(("%s : classe %s/%s → non suivie"):format(link, tostring(classID), tostring(subClassID)))
 		return
 	end
@@ -146,17 +289,18 @@ local function OnLoot(msg)
 
 	local rec = MoissonDB.objets[id]
 	if not rec then
-		rec = { total = 0, cat = subClassID }
+		rec = { total = 0, cat = cat }
 		MoissonDB.objets[id] = rec
 	end
 	rec.total = rec.total + qte
 	rec.icone = icone
 	rec.nom = rec.nom or GetItemInfo(id) -- en cache : on vient de le ramasser
-	MoissonDB.cats[subClassID] = (MoissonDB.cats[subClassID] or 0) + qte
+	MoissonDB.cats[cat] = (MoissonDB.cats[cat] or 0) + qte
 
 	session[id] = (session[id] or 0) + qte
-	sessionCats[subClassID] = (sessionCats[subClassID] or 0) + qte
-	dbg(("compté : %s x%d (%s)"):format(link, qte, CATS[subClassID].nom))
+	sessionCats[cat] = (sessionCats[cat] or 0) + qte
+	dbg(("compté : %s x%d (%s, classe %s/%s)"):format(link, qte, CATS[cat].nom,
+		tostring(classID), tostring(subClassID)))
 
 	Refresh()
 end
@@ -167,6 +311,7 @@ function ns.CompteursOnShow()
 	if not panel then BuildPanel() end
 	panel:SetShown(ns.db.compteurs)
 	Refresh()
+	RefreshBesace()
 end
 
 function ns.CompteursOnHide()
@@ -176,12 +321,12 @@ end
 function ns.Bilan()
 	ns.print("bilan de récolte (session · total) :")
 	local rien = true
-	for _, sub in ipairs(ORDRE_CATS) do
-		local s, g = sessionCats[sub] or 0, MoissonDB.cats[sub] or 0
+	for _, cat in ipairs(ORDRE_CATS) do
+		local s, g = sessionCats[cat] or 0, MoissonDB.cats[cat] or 0
 		if s > 0 or g > 0 then
 			rien = false
 			ns.print(string.format("  |T%s:14|t %s : %d · %d",
-				CATS[sub].icone, CATS[sub].nom, s, g))
+				CATS[cat].icone, CATS[cat].nom, s, g))
 		end
 	end
 	if rien then ns.print("  rien pour l'instant — va cueillir !") end
@@ -215,19 +360,19 @@ function ns.TestCompteurs()
 	if delta == 4 then
 		ns.print("chaîne de comptage |cff7fbf3fOK|r (4 fictifs comptés puis retirés).")
 	else
-		ns.print(("|cffff4040ÉCHEC|r : %d compté(s) au lieu de 4 — lance /moisson debug et recommence."):format(delta))
+		ns.print(("|cffff4040ÉCHEC|r : %d compté(s) au lieu de 4 — lance /moisson journal."):format(delta))
 	end
 	if delta > 0 then
 		session[2447] = avant > 0 and avant or nil
-		sessionCats[9] = (sessionCats[9] or 0) - delta
-		if sessionCats[9] <= 0 then sessionCats[9] = nil end
+		sessionCats.herbes = (sessionCats.herbes or 0) - delta
+		if sessionCats.herbes <= 0 then sessionCats.herbes = nil end
 		local rec = MoissonDB.objets[2447]
 		if rec then
 			rec.total = rec.total - delta
 			if rec.total <= 0 then MoissonDB.objets[2447] = nil end
 		end
-		MoissonDB.cats[9] = (MoissonDB.cats[9] or 0) - delta
-		if MoissonDB.cats[9] <= 0 then MoissonDB.cats[9] = nil end
+		MoissonDB.cats.herbes = (MoissonDB.cats.herbes or 0) - delta
+		if MoissonDB.cats.herbes <= 0 then MoissonDB.cats.herbes = nil end
 		Refresh()
 	end
 end
@@ -235,13 +380,20 @@ end
 function ns.InitCompteurs()
 	MoissonDB.objets = MoissonDB.objets or {}
 	MoissonDB.cats = MoissonDB.cats or {}
+	MoissonDB.journal = MoissonDB.journal or {}
 	local ev = CreateFrame("Frame")
 	ev:RegisterEvent("CHAT_MSG_LOOT")
-	ev:SetScript("OnEvent", function(_, _, msg)
+	ev:RegisterEvent("BAG_UPDATE_DELAYED")
+	ev:SetScript("OnEvent", function(_, event, msg)
+		if event == "BAG_UPDATE_DELAYED" then
+			RefreshBesace()
+			return
+		end
 		nbEvents = nbEvents + 1
-		-- toute erreur remonte en chat : BugSack & co avalent les erreurs Lua
+		-- toute erreur remonte en chat ET au journal : rien ne doit s'avaler
 		local ok, err = pcall(OnLoot, msg)
 		if not ok then
+			journal("ERREUR : " .. tostring(err))
 			ns.print("|cffff4040erreur compteur :|r " .. tostring(err))
 		end
 	end)

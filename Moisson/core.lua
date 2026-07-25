@@ -641,6 +641,12 @@ ev:SetScript("OnEvent", function(_, event, arg1)
 			MoissonDB.opts.combat = DEFAUTS.combat
 			MoissonDB.version = 3
 		end
+		-- v4 : catégories re-clées en chaînes (herbes, minerais…) + journal
+		if MoissonDB.version < 4 then
+			MoissonDB.objets = {}
+			MoissonDB.cats = {}
+			MoissonDB.version = 4
+		end
 		db = MoissonDB.opts
 		ns.db = db
 		if ns.InitCompteurs then ns.InitCompteurs() end
@@ -677,6 +683,7 @@ function ns.Aide()
 	print_("  /moisson compteurs — panneau de récolte on/off")
 	print_("  /moisson bilan — totaux en chat")
 	print_("  /moisson raz — remise à zéro session (« raz tout » : global)")
+	print_("  /moisson test — auto-test des compteurs · journal — traces des butins")
 end
 
 SLASH_MOISSON1 = "/moisson"
@@ -736,6 +743,8 @@ SlashCmdList["MOISSON"] = function(input)
 		print_("debug loot " .. (ns.debugLoot and "activé — ramasse quelque chose et lis le chat" or "désactivé") .. ".")
 	elseif cmd == "test" then
 		if ns.TestCompteurs then ns.TestCompteurs() end
+	elseif cmd == "journal" then
+		if ns.Journal then ns.Journal() end
 	elseif cmd == "raz" then
 		if ns.Raz then ns.Raz(arg == "tout") end
 	else
