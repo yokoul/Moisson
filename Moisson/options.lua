@@ -16,9 +16,11 @@ local COCHES = {
 local CURSEURS = {
 	{ cle = "taille",    txt = "Taille du HUD",            min = 0.5, max = 1.2, pas = 0.05 },
 	{ cle = "echelle",   txt = "Grossissement des pins",   min = 1,   max = 2,   pas = 0.1 },
-	{ cle = "alpha",     txt = "Fond de carte",            min = 0,   max = 1,   pas = 0.05 },
-	{ cle = "alpha2",    txt = "Fond alternatif",          min = 0,   max = 1,   pas = 0.05 },
-	{ cle = "cardalpha", txt = "Opacité des cardinaux",    min = 0,   max = 1,   pas = 0.05 },
+	{ cle = "alpha",     txt = "Fond de carte (mode invisible)", min = 0, max = 1, pas = 0.05 },
+	{ cle = "alpha2",    txt = "Fond de carte (mode carte)",     min = 0, max = 1, pas = 0.05 },
+	{ cle = "radarfond",  txt = "Radar : fond de carte",         min = 0, max = 1, pas = 0.05 },
+	{ cle = "radarvoile", txt = "Radar : voile noir",            min = 0, max = 1, pas = 0.05 },
+	{ cle = "cardalpha", txt = "Opacité des cardinaux",          min = 0, max = 1, pas = 0.05 },
 }
 
 function ns.InitOptions()
@@ -30,7 +32,7 @@ function ns.InitOptions()
 	scroll:SetPoint("BOTTOMRIGHT", -26, 4)
 
 	local content = CreateFrame("Frame", nil, scroll)
-	content:SetSize(560, 760)
+	content:SetSize(560, 860)
 	scroll:SetScrollChild(content)
 
 	local titre = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")

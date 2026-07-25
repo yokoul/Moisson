@@ -16,7 +16,10 @@ local DEFAUTS = {
 	taille    = 0.95,  -- fraction du plus petit côté de l'écran
 	echelle   = 1.4,   -- grossissement des pins (la minimap est réduite puis re-scalée)
 	alpha     = 0,     -- fond de carte invisible : seuls les pins restent
-	alpha2    = 0.5,   -- alpha alternatif (bouton « fond »)
+	alpha2    = 0.5,   -- alpha du mode « carte »
+	fondmode  = "invisible", -- invisible | radar | carte (cycle du bouton fond)
+	radarfond  = 0.45, -- mode radar : alpha de la minimap (les détections suivent)
+	radarvoile = 0.65, -- mode radar : opacité du voile noir qui éteint le terrain
 	rotation  = true,  -- la carte tourne avec le joueur
 	coords    = true,
 	cardinaux = true,
@@ -54,6 +57,24 @@ hud:SetPoint("CENTER", WorldFrame, "CENTER")
 hud:SetSize(200, 200)
 hud.size = 200
 ns.hud = hud
+
+-- mode radar : les points de détection (Trouver les herbes/minerais) sont
+-- dessinés DANS le rendu de la minimap, inséparables du terrain — l'alpha les
+-- avale avec. On garde donc un alpha modéré et on éteint le terrain avec un
+-- voile noir circulaire glissé SOUS la minimap.
+local radar = CreateFrame("Frame", nil, hud)
+radar:SetPoint("CENTER")
+radar:SetFrameStrata("BACKGROUND")
+radar:SetFrameLevel(0)
+radar:Hide()
+local voile = radar:CreateTexture(nil, "BACKGROUND")
+voile:SetAllPoints()
+voile:SetColorTexture(0, 0, 0, 1)
+local masque = radar:CreateMaskTexture()
+masque:SetAllPoints(voile)
+masque:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask",
+	"CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+voile:AddMaskTexture(masque)
 
 -- calque des pins : même géométrie que la minimap plein écran, mais frame
 -- frère → l'alpha du fond ne l'affecte pas.
@@ -126,6 +147,7 @@ local function SetScales()
 	local reduit = size / db.echelle
 	cluster:SetScale(db.echelle)
 	cluster:SetSize(reduit, reduit)
+	radar:SetSize(size, size)
 	if Minimap:GetParent() == hud then
 		MT.SetScale(Minimap, db.echelle)
 		MT.SetSize(Minimap, reduit, reduit)
@@ -302,11 +324,37 @@ function Moisson_ToggleMouse(force)
 	sourisFS:SetShown(enable)
 end
 
--- bascule fond invisible ↔ fond alternatif (alpha2), HUD ouvert uniquement
+-- application du mode de fond courant (invisible / radar / carte)
+local FOND_SUIVANT = { invisible = "radar", radar = "carte", carte = "invisible" }
+local FOND_LIBELLE = {
+	invisible = "fond invisible",
+	radar = "radar (détections visibles, terrain éteint)",
+	carte = "carte",
+}
+
+local function ApplyFond()
+	if Minimap:GetParent() ~= hud then return end
+	local mode = db.fondmode
+	if mode == "radar" then
+		MT.SetAlpha(Minimap, db.radarfond)
+		radar:SetAlpha(db.radarvoile)
+		radar:Show()
+	elseif mode == "carte" then
+		MT.SetAlpha(Minimap, db.alpha2)
+		radar:Hide()
+	else
+		MT.SetAlpha(Minimap, db.alpha)
+		radar:Hide()
+	end
+end
+ns.ApplyFond = ApplyFond
+
+-- cycle invisible → radar → carte (HUD ouvert uniquement)
 function Moisson_ToggleFond()
 	if Minimap:GetParent() ~= hud then return end
-	hud.fondAlt = not hud.fondAlt
-	MT.SetAlpha(Minimap, hud.fondAlt and db.alpha2 or db.alpha)
+	db.fondmode = FOND_SUIVANT[db.fondmode] or "invisible"
+	ApplyFond()
+	print_(FOND_LIBELLE[db.fondmode] .. ".")
 end
 
 -- ------------------------------------------------------- ancrage plein écran --
@@ -389,8 +437,7 @@ hud:SetScript("OnShow", function(self)
 	-- zoom » (Questie sonde l'intérieur/extérieur par SetZoom ±1 successifs)
 	saved.setZoomMember = rawget(Minimap, "SetZoom")
 	Minimap.SetZoom = function() end
-	MT.SetAlpha(Minimap, db.alpha)
-	self.fondAlt = false
+	ApplyFond()
 	sourisVoulue = false
 	MT.EnableMouse(Minimap, false)
 	MT.EnableMouseWheel(Minimap, false)
@@ -529,7 +576,7 @@ end
 NewBouton(-33, "Interface\\CURSOR\\Point", "Souris (inspecter les pins)", function()
 	Moisson_ToggleMouse()
 end)
-NewBouton(-11, "Interface\\WorldMap\\WorldMap-Icon", "Fond de carte", function()
+NewBouton(-11, "Interface\\WorldMap\\WorldMap-Icon", "Fond : invisible / radar / carte", function()
 	Moisson_ToggleFond()
 end)
 NewBouton(11, "Interface\\Buttons\\UI-OptionsButton", "Options", function()
@@ -569,11 +616,19 @@ ns.Apply = {
 	end,
 	alpha = function(v)
 		db.alpha = v
-		if hud:IsShown() and not hud.fondAlt then MT.SetAlpha(Minimap, v) end
+		if hud:IsShown() then ApplyFond() end
 	end,
 	alpha2 = function(v)
 		db.alpha2 = v
-		if hud:IsShown() and hud.fondAlt then MT.SetAlpha(Minimap, v) end
+		if hud:IsShown() then ApplyFond() end
+	end,
+	radarfond = function(v)
+		db.radarfond = v
+		if hud:IsShown() then ApplyFond() end
+	end,
+	radarvoile = function(v)
+		db.radarvoile = v
+		if hud:IsShown() then ApplyFond() end
 	end,
 	rotation = function(v)
 		db.rotation = v
@@ -689,7 +744,7 @@ function ns.Aide()
 	print_("  /moisson — afficher/masquer le HUD")
 	print_("  /moisson options — panneau de réglages")
 	print_("  /moisson souris — activer la souris (tooltips des pins)")
-	print_("  /moisson fond — basculer le fond de carte")
+	print_("  /moisson fond — cycle invisible / radar (détections) / carte")
 	print_("  /moisson rotation — carte fixe ou rotative")
 	print_("  /moisson taille 0.3–1.2 · echelle 1–2 · alpha 0–1 · cardalpha 0–1")
 	print_("  /moisson compteurs — panneau de récolte on/off")
