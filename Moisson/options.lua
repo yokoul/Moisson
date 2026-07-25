@@ -10,6 +10,7 @@ local COCHES = {
 	{ cle = "coords",    txt = "Coordonnées du joueur" },
 	{ cle = "compteurs", txt = "Panneau des compteurs de récolte" },
 	{ cle = "boutons",   txt = "Boutons à l'écran (souris, fond, options, fermer)" },
+	{ cle = "sourisalt", txt = "Souris tant qu'Alt est enfoncée (identification au survol)" },
 	{ cle = "combat",    txt = "Masquer le HUD en combat" },
 }
 

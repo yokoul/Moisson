@@ -26,6 +26,7 @@ local DEFAUTS = {
 	cardalpha = 0.5,   -- transparence des points cardinaux
 	compteurs = true,
 	boutons   = false,
+	sourisalt = true,  -- souris fugace : active tant qu'Alt est enfoncée
 	combat    = false, -- masquer le HUD en combat (comme FarmHud : non par défaut)
 	bouton_angle = 200, -- position du bouton minimap
 }
@@ -671,6 +672,9 @@ ns.Apply = {
 		db.boutons = v
 		if hud:IsShown() then boutons:SetShown(v) end
 	end,
+	sourisalt = function(v)
+		db.sourisalt = v
+	end,
 	combat = function(v)
 		db.combat = v
 	end,
@@ -678,12 +682,31 @@ ns.Apply = {
 
 -- ------------------------------------------------------------------- events --
 
+local altSouris = false -- la souris courante a été activée par Alt
+
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("ADDON_LOADED")
 ev:RegisterEvent("PLAYER_LOGOUT")
 ev:RegisterEvent("PLAYER_REGEN_DISABLED")
 ev:RegisterEvent("PLAYER_REGEN_ENABLED")
-ev:SetScript("OnEvent", function(_, event, arg1)
+ev:RegisterEvent("MODIFIER_STATE_CHANGED")
+ev:SetScript("OnEvent", function(_, event, arg1, arg2)
+	if event == "MODIFIER_STATE_CHANGED" then
+		-- souris fugace : la minimap ne mange les clics que pendant l'appui
+		if db and db.sourisalt and hud:IsShown()
+		and (arg1 == "LALT" or arg1 == "RALT") then
+			if arg2 == 1 then
+				if not Minimap:IsMouseEnabled() then
+					altSouris = true
+					Moisson_ToggleMouse(true)
+				end
+			elseif altSouris then
+				altSouris = false
+				Moisson_ToggleMouse(false)
+			end
+		end
+		return
+	end
 	if event == "ADDON_LOADED" and arg1 == ADDON then
 		MoissonDB = MoissonDB or {}
 		MoissonDB.opts = MoissonDB.opts or {}
