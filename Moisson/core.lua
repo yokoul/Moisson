@@ -564,7 +564,8 @@ end)
 -- La texture est un canevas 512×256 (puissances de deux : pas de rembourrage
 -- surprise du client), la plaque occupe le bandeau haut → SetTexCoord.
 local PLATINE_L, PLATINE_H = 180, 53
-local TAILLE_BOUTON, TAILLE_SURVOL = 26, 36
+-- les médaillons COUVRENT l'anneau des alvéoles (un seul anneau visible)
+local TAILLE_BOUTON, TAILLE_SURVOL = 34, 44
 
 local boutons = CreateFrame("Frame", nil, hud)
 boutons:SetSize(PLATINE_L, PLATINE_H)
@@ -581,7 +582,7 @@ platine:SetTexCoord(0, 1, 0, 0.5859)
 local function NewBouton(frac, texture, tooltip, onClick)
 	local b = CreateFrame("Button", nil, boutons)
 	b:SetSize(TAILLE_BOUTON, TAILLE_BOUTON)
-	b:SetPoint("CENTER", boutons, "LEFT", frac * PLATINE_L, -1)
+	b:SetPoint("CENTER", boutons, "LEFT", frac * PLATINE_L, 2)
 	b:SetNormalTexture(texture)
 	b:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight", "ADD")
 	b:SetScript("OnClick", onClick)
@@ -598,16 +599,17 @@ local function NewBouton(frac, texture, tooltip, onClick)
 	return b
 end
 
-NewBouton(0.180, "Interface\\AddOns\\Moisson\\img\\btn-souris.png", L.BTN_SOURIS, function()
+-- fractions mesurées sur le rendu in-game (capture 2560×1440), pas sur le fichier
+NewBouton(0.173, "Interface\\AddOns\\Moisson\\img\\btn-souris.png", L.BTN_SOURIS, function()
 	Moisson_ToggleMouse()
 end)
-NewBouton(0.398, "Interface\\AddOns\\Moisson\\img\\btn-fond.png", L.BTN_FOND, function()
+NewBouton(0.390, "Interface\\AddOns\\Moisson\\img\\btn-fond.png", L.BTN_FOND, function()
 	Moisson_ToggleFond()
 end)
-NewBouton(0.616, "Interface\\AddOns\\Moisson\\img\\btn-options.png", L.BTN_OPTIONS, function()
+NewBouton(0.594, "Interface\\AddOns\\Moisson\\img\\btn-options.png", L.BTN_OPTIONS, function()
 	if ns.OpenOptions then ns.OpenOptions() else ns.Aide() end
 end)
-NewBouton(0.852, "Interface\\AddOns\\Moisson\\img\\btn-fermer.png", L.BTN_FERMER, function()
+NewBouton(0.797, "Interface\\AddOns\\Moisson\\img\\btn-fermer.png", L.BTN_FERMER, function()
 	Moisson_Toggle(false)
 end)
 
@@ -860,6 +862,9 @@ SlashCmdList["MOISSON"] = function(input)
 		if ns.TestCompteurs then ns.TestCompteurs() end
 	elseif cmd == "journal" then
 		if ns.Journal then ns.Journal() end
+	elseif cmd == "version" then
+		local GetMeta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+		print_("version " .. (GetMeta and GetMeta(ADDON, "Version") or "?"))
 	elseif cmd == "raz" then
 		if ns.Raz then ns.Raz(arg == "tout") end
 	else
