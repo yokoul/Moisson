@@ -559,39 +559,52 @@ end)
 
 -- ------------------------------------------------------------------ boutons --
 
+-- rangée de boutons : une platine à 4 alvéoles (btn-bg) accueille les
+-- médaillons ; les fractions X viennent de la mesure des alvéoles du visuel.
+local PLATINE_L, PLATINE_H = 224, 66
+local TAILLE_BOUTON, TAILLE_SURVOL = 32, 44
+
 local boutons = CreateFrame("Frame", nil, hud)
-boutons:SetSize(1, 1)
+boutons:SetSize(PLATINE_L, PLATINE_H)
 boutons:SetPoint("CENTER", hud, "CENTER", 0, -60)
 boutons:Hide()
 hud.boutons = boutons
 ns.boutonsRow = boutons -- le panneau des compteurs se l'annexe (rangée discrète)
 
-local function NewBouton(offsetX, texture, tooltip, onClick)
+local platine = boutons:CreateTexture(nil, "BACKGROUND")
+platine:SetAllPoints()
+platine:SetTexture("Interface\\AddOns\\Moisson\\img\\btn-bg.png")
+
+local function NewBouton(frac, texture, tooltip, onClick)
 	local b = CreateFrame("Button", nil, boutons)
-	b:SetSize(20, 20)
-	b:SetPoint("CENTER", offsetX, 0)
+	b:SetSize(TAILLE_BOUTON, TAILLE_BOUTON)
+	b:SetPoint("CENTER", boutons, "LEFT", frac * PLATINE_L, -1)
 	b:SetNormalTexture(texture)
 	b:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight", "ADD")
 	b:SetScript("OnClick", onClick)
 	b:SetScript("OnEnter", function(self)
+		self:SetSize(TAILLE_SURVOL, TAILLE_SURVOL) -- le médaillon sort de l'alvéole
 		GameTooltip:SetOwner(self, "ANCHOR_TOP")
 		GameTooltip:SetText(tooltip)
 		GameTooltip:Show()
 	end)
-	b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	b:SetScript("OnLeave", function(self)
+		self:SetSize(TAILLE_BOUTON, TAILLE_BOUTON)
+		GameTooltip:Hide()
+	end)
 	return b
 end
 
-NewBouton(-33, "Interface\\AddOns\\Moisson\\img\\btn-souris.png", L.BTN_SOURIS, function()
+NewBouton(0.180, "Interface\\AddOns\\Moisson\\img\\btn-souris.png", L.BTN_SOURIS, function()
 	Moisson_ToggleMouse()
 end)
-NewBouton(-11, "Interface\\AddOns\\Moisson\\img\\btn-fond.png", L.BTN_FOND, function()
+NewBouton(0.398, "Interface\\AddOns\\Moisson\\img\\btn-fond.png", L.BTN_FOND, function()
 	Moisson_ToggleFond()
 end)
-NewBouton(11, "Interface\\AddOns\\Moisson\\img\\btn-options.png", L.BTN_OPTIONS, function()
+NewBouton(0.616, "Interface\\AddOns\\Moisson\\img\\btn-options.png", L.BTN_OPTIONS, function()
 	if ns.OpenOptions then ns.OpenOptions() else ns.Aide() end
 end)
-NewBouton(33, "Interface\\Buttons\\UI-Panel-MinimizeButton-Up", L.BTN_FERMER, function()
+NewBouton(0.852, "Interface\\AddOns\\Moisson\\img\\btn-fermer.png", L.BTN_FERMER, function()
 	Moisson_Toggle(false)
 end)
 
