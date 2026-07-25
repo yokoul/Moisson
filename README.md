@@ -1,4 +1,4 @@
-# Moisson
+<p align="center"><img src="design/moisson-logo-primary.png" alt="Moisson" width="480"></p>
 
 HUD de récolte plein écran pour WoW Classic Era, avec compteurs de farm.
 
@@ -14,11 +14,17 @@ de récolte qui n'existent pas dans l'original.
   GatherMate2/Questie restent opaques pendant que le fond de carte s'efface.
 - **Rotation radar** (optionnelle) : la carte tourne avec le joueur,
   points cardinaux N/NE/E/SE/S/SO/O/NO recalculés en continu.
-- **Compteurs de récolte** : herbes, minerais, cuirs, tissus, viandes,
+- **Compteurs de récolte** : herbes, minerais, gemmes, cuirs, tissus, viandes,
   élémentaires — par objet avec icône, cumul **session** et **global**
   (persistant). Panneau sur le HUD + `/moisson bilan` en chat.
+- **Besace** : ce que les sacs contiennent pour le(s) métier(s) de récolte du
+  personnage (herboristerie → herbes, minage → minerais et gemmes,
+  dépeçage → cuirs).
+- **Mode radar** : le fond de carte cycle entre invisible, radar (alpha
+  modéré + voile noir : les détections « Trouver les herbes/minerais »
+  restent visibles sur terrain éteint) et carte.
 - **Coordonnées** du joueur, boutons à l'écran (souris, fond, aide, fermer),
-  masquage automatique en combat.
+  masquage en combat (optionnel).
 - Un « leurre » occupe l'ancien emplacement de la minimap : les boutons
   d'addons (ElvUI, MinimapButtonButton, LibDBIcon…) restent à leur place.
 

@@ -32,16 +32,18 @@ function ns.InitOptions()
 	scroll:SetPoint("BOTTOMRIGHT", -26, 4)
 
 	local content = CreateFrame("Frame", nil, scroll)
-	content:SetSize(560, 860)
+	content:SetSize(560, 1010)
 	scroll:SetScrollChild(content)
 
-	local titre = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-	titre:SetPoint("TOPLEFT", 16, -16)
-	titre:SetText("|cff7fbf3fMoisson|r — HUD de récolte")
+	-- la bannière porte déjà le nom de l'addon
+	local logo = content:CreateTexture(nil, "ARTWORK")
+	logo:SetSize(280, 191) -- ratio du fichier 768×524
+	logo:SetPoint("TOPLEFT", 16, -8)
+	logo:SetTexture("Interface\\AddOns\\Moisson\\img\\logo-primary.png")
 
 	local sousTitre = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	sousTitre:SetPoint("TOPLEFT", titre, "BOTTOMLEFT", 0, -4)
-	sousTitre:SetText("Raccourcis définissables ci-dessous.  En jeu : /moisson aide")
+	sousTitre:SetPoint("TOPLEFT", logo, "BOTTOMLEFT", 0, -2)
+	sousTitre:SetText("HUD de récolte — raccourcis définissables ci-dessous.  En jeu : /moisson aide")
 
 	local prev = sousTitre
 	for _, def in ipairs(COCHES) do

@@ -30,15 +30,11 @@ function ns.InitBoutonMinimap()
 	mmb:RegisterForDrag("LeftButton")
 	mmb:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
 
-	local overlay = mmb:CreateTexture(nil, "OVERLAY")
-	overlay:SetSize(53, 53)
-	overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-	overlay:SetPoint("TOPLEFT")
-
+	-- le médaillon Moisson embarque son propre anneau doré : pas de bordure
+	-- de tracking Blizzard par-dessus
 	local icon = mmb:CreateTexture(nil, "BACKGROUND")
-	icon:SetSize(20, 20)
-	icon:SetTexture("Interface\\Icons\\Trade_Herbalism")
-	icon:SetPoint("TOPLEFT", 7, -5)
+	icon:SetAllPoints()
+	icon:SetTexture("Interface\\AddOns\\Moisson\\img\\logo-minimap.png")
 
 	mmb:SetScript("OnClick", function(_, button)
 		if button == "RightButton" then
