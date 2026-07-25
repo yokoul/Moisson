@@ -561,8 +561,10 @@ end)
 
 -- rangée de boutons : une platine à 4 alvéoles (btn-bg) accueille les
 -- médaillons ; les fractions X viennent de la mesure des alvéoles du visuel.
-local PLATINE_L, PLATINE_H = 224, 66
-local TAILLE_BOUTON, TAILLE_SURVOL = 32, 44
+-- La texture est un canevas 512×256 (puissances de deux : pas de rembourrage
+-- surprise du client), la plaque occupe le bandeau haut → SetTexCoord.
+local PLATINE_L, PLATINE_H = 180, 53
+local TAILLE_BOUTON, TAILLE_SURVOL = 26, 36
 
 local boutons = CreateFrame("Frame", nil, hud)
 boutons:SetSize(PLATINE_L, PLATINE_H)
@@ -574,6 +576,7 @@ ns.boutonsRow = boutons -- le panneau des compteurs se l'annexe (rangée discrè
 local platine = boutons:CreateTexture(nil, "BACKGROUND")
 platine:SetAllPoints()
 platine:SetTexture("Interface\\AddOns\\Moisson\\img\\btn-bg.png")
+platine:SetTexCoord(0, 1, 0, 0.5859)
 
 local function NewBouton(frac, texture, tooltip, onClick)
 	local b = CreateFrame("Button", nil, boutons)
