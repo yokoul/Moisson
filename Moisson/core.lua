@@ -647,6 +647,18 @@ ev:SetScript("OnEvent", function(_, event, arg1)
 			MoissonDB.cats = {}
 			MoissonDB.version = 4
 		end
+		-- v5 : reclassement selon les familles Era (donnees.lua) — la DB2 du
+		-- client range presque tout en 7/0, les premiers comptes étaient
+		-- partis en « autres »
+		if MoissonDB.version < 5 then
+			local fam, cats = ns.FAMILLES or {}, {}
+			for id, rec in pairs(MoissonDB.objets or {}) do
+				rec.cat = fam[id] or rec.cat or "autres"
+				cats[rec.cat] = (cats[rec.cat] or 0) + (rec.total or 0)
+			end
+			MoissonDB.cats = cats
+			MoissonDB.version = 5
+		end
 		db = MoissonDB.opts
 		ns.db = db
 		if ns.InitCompteurs then ns.InitCompteurs() end

@@ -10,9 +10,9 @@ local ADDON, ns = ...
 local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
 local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
 
--- catégories de farm : sous-classes « Trade Goods » (classID 7) + gemmes
--- (classID 3). Toute sous-classe 7 imprévue tombe dans « autres » plutôt que
--- d'être jetée : si le client Era classe autrement, on compte quand même.
+-- catégories de farm. Le tri fiable vient des listes d'itemIDs (donnees.lua) :
+-- la DB2 d'Era classe presque tout en 7/0 générique. Les sous-classes
+-- modernes restent en repli, et toute marchandise inconnue part en « autres ».
 local CATS = {
 	herbes   = { nom = "Herbes",       icone = "Interface\\Icons\\Trade_Herbalism" },
 	minerais = { nom = "Minerais",     icone = "Interface\\Icons\\Trade_Mining" },
@@ -27,7 +27,9 @@ local ORDRE_CATS = { "herbes", "minerais", "gemmes", "cuirs", "tissus", "viandes
 local SUB7 = { [9] = "herbes", [7] = "minerais", [6] = "cuirs", [5] = "tissus",
 	[8] = "viandes", [10] = "elems" }
 
-local function Categorie(classID, subClassID)
+local function Categorie(id, classID, subClassID)
+	local fam = ns.FAMILLES and ns.FAMILLES[id]
+	if fam then return fam end
 	if classID == 7 then return SUB7[subClassID] or "autres" end
 	if classID == 3 then return "gemmes" end
 end
@@ -124,7 +126,7 @@ local function ScanBesace(voulu)
 			end
 			if id then
 				local _, _, _, _, icone, classID, subClassID = GetItemInfoInstant(id)
-				local cat = Categorie(classID, subClassID)
+				local cat = Categorie(id, classID, subClassID)
 				if cat and voulu[cat] then
 					local t = totaux[id]
 					if not t then
@@ -279,7 +281,7 @@ local function OnLoot(msg)
 	end
 
 	local _, _, _, _, icone, classID, subClassID = GetItemInfoInstant(id)
-	local cat = Categorie(classID, subClassID)
+	local cat = Categorie(id, classID, subClassID)
 	if not cat then
 		dbg(("%s : classe %s/%s → non suivie"):format(link, tostring(classID), tostring(subClassID)))
 		return
