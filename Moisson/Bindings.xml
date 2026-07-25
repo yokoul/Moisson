@@ -5,4 +5,7 @@
 	<Binding name="MOISSON_MOUSE" category="ADDONS">
 		Moisson_ToggleMouse()
 	</Binding>
+	<Binding name="MOISSON_FOND" category="ADDONS">
+		Moisson_ToggleFond()
+	</Binding>
 </Bindings>

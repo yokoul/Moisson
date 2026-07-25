@@ -200,12 +200,45 @@ function ns.Raz(tout)
 	Refresh()
 end
 
+local nbEvents = 0 -- messages CHAT_MSG_LOOT reçus, avant tout filtrage
+
+-- /moisson test : injecte de faux butins (formés avec les globales du client,
+-- donc la détection de préfixe est exercée pour de vrai) puis retire les
+-- comptes fictifs. Diagnostique toute la chaîne sans quitter la capitale.
+function ns.TestCompteurs()
+	ns.print(("auto-test — %d message(s) CHAT_MSG_LOOT reçu(s) depuis la connexion."):format(nbEvents))
+	local lien = "|cffffffff|Hitem:2447::::::::20:::::::|h[Pacifique]|h|r"
+	local avant = session[2447] or 0
+	OnLoot(LOOT_ITEM_SELF:format(lien))
+	OnLoot(LOOT_ITEM_SELF_MULTIPLE:format(lien, 3))
+	local delta = (session[2447] or 0) - avant
+	if delta == 4 then
+		ns.print("chaîne de comptage |cff7fbf3fOK|r (4 fictifs comptés puis retirés).")
+	else
+		ns.print(("|cffff4040ÉCHEC|r : %d compté(s) au lieu de 4 — lance /moisson debug et recommence."):format(delta))
+	end
+	if delta > 0 then
+		session[2447] = avant > 0 and avant or nil
+		sessionCats[9] = (sessionCats[9] or 0) - delta
+		if sessionCats[9] <= 0 then sessionCats[9] = nil end
+		local rec = MoissonDB.objets[2447]
+		if rec then
+			rec.total = rec.total - delta
+			if rec.total <= 0 then MoissonDB.objets[2447] = nil end
+		end
+		MoissonDB.cats[9] = (MoissonDB.cats[9] or 0) - delta
+		if MoissonDB.cats[9] <= 0 then MoissonDB.cats[9] = nil end
+		Refresh()
+	end
+end
+
 function ns.InitCompteurs()
 	MoissonDB.objets = MoissonDB.objets or {}
 	MoissonDB.cats = MoissonDB.cats or {}
 	local ev = CreateFrame("Frame")
 	ev:RegisterEvent("CHAT_MSG_LOOT")
 	ev:SetScript("OnEvent", function(_, _, msg)
+		nbEvents = nbEvents + 1
 		-- toute erreur remonte en chat : BugSack & co avalent les erreurs Lua
 		local ok, err = pcall(OnLoot, msg)
 		if not ok then

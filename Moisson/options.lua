@@ -113,10 +113,11 @@ function ns.InitOptions()
 
 	local bindHud = BindButton("MOISSON_TOGGLE", "Ouvrir / fermer le HUD", prevSlider, -32)
 	local bindSouris = BindButton("MOISSON_MOUSE", "Basculer la souris", bindHud, -6)
+	local bindFond = BindButton("MOISSON_FOND", "Basculer le fond de carte", bindSouris, -6)
 
 	local razSession = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 	razSession:SetSize(160, 22)
-	razSession:SetPoint("TOPLEFT", bindSouris, "BOTTOMLEFT", 0, -24)
+	razSession:SetPoint("TOPLEFT", bindFond, "BOTTOMLEFT", 0, -24)
 	razSession:SetText("RàZ compteurs session")
 	razSession:SetScript("OnClick", function() if ns.Raz then ns.Raz(false) end end)
 

@@ -302,6 +302,13 @@ function Moisson_ToggleMouse(force)
 	sourisFS:SetShown(enable)
 end
 
+-- bascule fond invisible ↔ fond alternatif (alpha2), HUD ouvert uniquement
+function Moisson_ToggleFond()
+	if Minimap:GetParent() ~= hud then return end
+	hud.fondAlt = not hud.fondAlt
+	MT.SetAlpha(Minimap, hud.fondAlt and db.alpha2 or db.alpha)
+end
+
 -- ------------------------------------------------------- ancrage plein écran --
 
 -- SetPoint peut lever « anchor family connection » selon ce que d'autres
@@ -523,8 +530,7 @@ NewBouton(-33, "Interface\\CURSOR\\Point", "Souris (inspecter les pins)", functi
 	Moisson_ToggleMouse()
 end)
 NewBouton(-11, "Interface\\WorldMap\\WorldMap-Icon", "Fond de carte", function()
-	hud.fondAlt = not hud.fondAlt
-	MT.SetAlpha(Minimap, hud.fondAlt and db.alpha2 or db.alpha)
+	Moisson_ToggleFond()
 end)
 NewBouton(11, "Interface\\Buttons\\UI-OptionsButton", "Options", function()
 	if ns.OpenOptions then ns.OpenOptions() else ns.Aide() end
@@ -547,6 +553,7 @@ end
 BINDING_HEADER_MOISSON = "Moisson"
 BINDING_NAME_MOISSON_TOGGLE = "Afficher / masquer le HUD"
 BINDING_NAME_MOISSON_MOUSE = "Basculer la souris (HUD ouvert)"
+BINDING_NAME_MOISSON_FOND = "Basculer le fond de carte (HUD ouvert)"
 
 -- ---------------------------------------------------- application des options --
 
@@ -664,6 +671,7 @@ function ns.Aide()
 	print_("  /moisson — afficher/masquer le HUD")
 	print_("  /moisson options — panneau de réglages")
 	print_("  /moisson souris — activer la souris (tooltips des pins)")
+	print_("  /moisson fond — basculer le fond de carte")
 	print_("  /moisson rotation — carte fixe ou rotative")
 	print_("  /moisson taille 0.3–1.2 · echelle 1–2 · alpha 0–1 · cardalpha 0–1")
 	print_("  /moisson compteurs — panneau de récolte on/off")
@@ -681,6 +689,8 @@ SlashCmdList["MOISSON"] = function(input)
 		if ns.OpenOptions then ns.OpenOptions() end
 	elseif cmd == "souris" then
 		Moisson_ToggleMouse()
+	elseif cmd == "fond" then
+		Moisson_ToggleFond()
 	elseif cmd == "rotation" then
 		ns.Apply.rotation(not db.rotation)
 		print_("rotation " .. (db.rotation and "activée" or "désactivée") .. ".")
@@ -724,6 +734,8 @@ SlashCmdList["MOISSON"] = function(input)
 	elseif cmd == "debug" then
 		ns.debugLoot = not ns.debugLoot
 		print_("debug loot " .. (ns.debugLoot and "activé — ramasse quelque chose et lis le chat" or "désactivé") .. ".")
+	elseif cmd == "test" then
+		if ns.TestCompteurs then ns.TestCompteurs() end
 	elseif cmd == "raz" then
 		if ns.Raz then ns.Raz(arg == "tout") end
 	else
