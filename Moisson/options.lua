@@ -3,25 +3,26 @@
 -- ScrollFrame, seule la molette/l'ascenseur bouge.
 
 local ADDON, ns = ...
+local L = ns.L
 
 local COCHES = {
-	{ cle = "rotation",  txt = "Rotation façon radar (la carte tourne avec le joueur)" },
-	{ cle = "cardinaux", txt = "Points cardinaux (N/NE/E/…)" },
-	{ cle = "coords",    txt = "Coordonnées du joueur" },
-	{ cle = "compteurs", txt = "Panneau des compteurs de récolte" },
-	{ cle = "boutons",   txt = "Boutons à l'écran (souris, fond, options, fermer)" },
-	{ cle = "sourisalt", txt = "Souris tant qu'Alt est enfoncée (identification au survol)" },
-	{ cle = "combat",    txt = "Masquer le HUD en combat" },
+	{ cle = "rotation",  txt = L.OPT_ROTATION },
+	{ cle = "cardinaux", txt = L.OPT_CARDINAUX },
+	{ cle = "coords",    txt = L.OPT_COORDS },
+	{ cle = "compteurs", txt = L.OPT_COMPTEURS },
+	{ cle = "boutons",   txt = L.OPT_BOUTONS },
+	{ cle = "sourisalt", txt = L.OPT_SOURISALT },
+	{ cle = "combat",    txt = L.OPT_COMBAT },
 }
 
 local CURSEURS = {
-	{ cle = "taille",    txt = "Taille du HUD",            min = 0.5, max = 1.2, pas = 0.05 },
-	{ cle = "echelle",   txt = "Grossissement des pins",   min = 1,   max = 2,   pas = 0.1 },
-	{ cle = "alpha",     txt = "Fond de carte (mode invisible)", min = 0, max = 1, pas = 0.05 },
-	{ cle = "alpha2",    txt = "Fond de carte (mode carte)",     min = 0, max = 1, pas = 0.05 },
-	{ cle = "radarfond",  txt = "Radar : fond de carte",         min = 0, max = 1, pas = 0.05 },
-	{ cle = "radarvoile", txt = "Radar : voile noir",            min = 0, max = 1, pas = 0.05 },
-	{ cle = "cardalpha", txt = "Opacité des cardinaux",          min = 0, max = 1, pas = 0.05 },
+	{ cle = "taille",     txt = L.OPT_TAILLE,     min = 0.5, max = 1.2, pas = 0.05 },
+	{ cle = "echelle",    txt = L.OPT_ECHELLE,    min = 1,   max = 2,   pas = 0.1 },
+	{ cle = "alpha",      txt = L.OPT_ALPHA,      min = 0,   max = 1,   pas = 0.05 },
+	{ cle = "alpha2",     txt = L.OPT_ALPHA2,     min = 0,   max = 1,   pas = 0.05 },
+	{ cle = "radarfond",  txt = L.OPT_RADARFOND,  min = 0,   max = 1,   pas = 0.05 },
+	{ cle = "radarvoile", txt = L.OPT_RADARVOILE, min = 0,   max = 1,   pas = 0.05 },
+	{ cle = "cardalpha",  txt = L.OPT_CARDALPHA,  min = 0,   max = 1,   pas = 0.05 },
 }
 
 function ns.InitOptions()
@@ -44,7 +45,7 @@ function ns.InitOptions()
 
 	local sousTitre = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	sousTitre:SetPoint("TOPLEFT", logo, "BOTTOMLEFT", 0, -2)
-	sousTitre:SetText("HUD de récolte — raccourcis définissables ci-dessous.  En jeu : /moisson aide")
+	sousTitre:SetText(L.OPT_SOUSTITRE)
 
 	local prev = sousTitre
 	for _, def in ipairs(COCHES) do
@@ -92,12 +93,12 @@ function ns.InitOptions()
 		b:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", 0, offsetY)
 		local function refresh()
 			local key = GetBindingKey(command)
-			b:SetText(label .. " : " .. (key and GetBindingText(key) or "|cff808080non défini|r"))
+			b:SetText(label .. " : " .. (key and GetBindingText(key) or L.OPT_NON_DEFINI))
 		end
 		b:SetScript("OnClick", function(self)
 			if self.ecoute then return end
 			self.ecoute = true
-			self:SetText(label .. " : |cffffd200appuie sur une touche…|r (Échap : effacer)")
+			self:SetText(label .. " : |cffffd200" .. L.OPT_APPUIE .. "|r")
 			self:EnableKeyboard(true)
 			self:SetScript("OnKeyDown", function(self, key)
 				if key == "LSHIFT" or key == "RSHIFT" or key == "LCTRL" or key == "RCTRL"
@@ -126,25 +127,25 @@ function ns.InitOptions()
 		return b
 	end
 
-	local bindHud = BindButton("MOISSON_TOGGLE", "Ouvrir / fermer le HUD", prevSlider, -32)
-	local bindSouris = BindButton("MOISSON_MOUSE", "Basculer la souris", bindHud, -6)
-	local bindFond = BindButton("MOISSON_FOND", "Basculer le fond de carte", bindSouris, -6)
+	local bindHud = BindButton("MOISSON_TOGGLE", L.OPT_BIND_HUD, prevSlider, -32)
+	local bindSouris = BindButton("MOISSON_MOUSE", L.OPT_BIND_SOURIS, bindHud, -6)
+	local bindFond = BindButton("MOISSON_FOND", L.OPT_BIND_FOND, bindSouris, -6)
 
 	local razSession = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
 	razSession:SetSize(160, 22)
 	razSession:SetPoint("TOPLEFT", bindFond, "BOTTOMLEFT", 0, -24)
-	razSession:SetText("RàZ compteurs session")
+	razSession:SetText(L.OPT_RAZ_SESSION)
 	razSession:SetScript("OnClick", function() if ns.Raz then ns.Raz(false) end end)
 
 	local razTout = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
 	razTout:SetSize(160, 22)
 	razTout:SetPoint("LEFT", razSession, "RIGHT", 8, 0)
-	razTout:SetText("RàZ tout (global)")
+	razTout:SetText(L.OPT_RAZ_TOUT)
 	razTout:SetScript("OnClick", function() if ns.Raz then ns.Raz(true) end end)
 
 	local credits = content:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	credits:SetPoint("TOPLEFT", razSession, "BOTTOMLEFT", 0, -24)
-	credits:SetText("Mécanisme inspiré de FarmHud (Hizuro) — réécriture yokoul.")
+	credits:SetText(L.OPT_CREDITS)
 
 	-- nouvelle API Settings (1.15) avec repli sur l'ancienne
 	if Settings and Settings.RegisterCanvasLayoutCategory then

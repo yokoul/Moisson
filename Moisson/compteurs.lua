@@ -9,19 +9,20 @@ local ADDON, ns = ...
 -- les globales historiques ont été retirées du client 1.15 → API C_Item
 local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
 local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
+local L = ns.L
 
 -- catégories de farm. Le tri fiable vient des listes d'itemIDs (donnees.lua) :
 -- la DB2 d'Era classe presque tout en 7/0 générique. Les sous-classes
 -- modernes restent en repli, et toute marchandise inconnue part en « autres ».
 local CATS = {
-	herbes   = { nom = "Herbes",       icone = "Interface\\Icons\\Trade_Herbalism" },
-	minerais = { nom = "Minerais",     icone = "Interface\\Icons\\Trade_Mining" },
-	gemmes   = { nom = "Gemmes",       icone = "Interface\\Icons\\INV_Misc_Gem_01" },
-	cuirs    = { nom = "Cuirs",        icone = "Interface\\Icons\\INV_Misc_LeatherScrap_02" },
-	tissus   = { nom = "Tissus",       icone = "Interface\\Icons\\INV_Fabric_Linen_01" },
-	viandes  = { nom = "Viandes",      icone = "Interface\\Icons\\INV_Misc_Food_14" },
-	elems    = { nom = "Élémentaires", icone = "Interface\\Icons\\INV_Stone_05" },
-	autres   = { nom = "Autres",       icone = "Interface\\Icons\\INV_Misc_Bag_08" },
+	herbes   = { nom = L.CAT_HERBES,   icone = "Interface\\Icons\\Trade_Herbalism" },
+	minerais = { nom = L.CAT_MINERAIS, icone = "Interface\\Icons\\Trade_Mining" },
+	gemmes   = { nom = L.CAT_GEMMES,   icone = "Interface\\Icons\\INV_Misc_Gem_01" },
+	cuirs    = { nom = L.CAT_CUIRS,    icone = "Interface\\Icons\\INV_Misc_LeatherScrap_02" },
+	tissus   = { nom = L.CAT_TISSUS,   icone = "Interface\\Icons\\INV_Fabric_Linen_01" },
+	viandes  = { nom = L.CAT_VIANDES,  icone = "Interface\\Icons\\INV_Misc_Food_14" },
+	elems    = { nom = L.CAT_ELEMS,    icone = "Interface\\Icons\\INV_Stone_05" },
+	autres   = { nom = L.CAT_AUTRES,   icone = "Interface\\Icons\\INV_Misc_Bag_08" },
 }
 local ORDRE_CATS = { "herbes", "minerais", "gemmes", "cuirs", "tissus", "viandes", "elems", "autres" }
 local SUB7 = { [9] = "herbes", [7] = "minerais", [6] = "cuirs", [5] = "tissus",
@@ -76,10 +77,10 @@ end
 function ns.Journal()
 	local j = MoissonDB.journal
 	if not j or #j == 0 then
-		ns.print("journal vide — aucun CHAT_MSG_LOOT tracé pour l'instant.")
+		ns.print(L.JOURNAL_VIDE)
 		return
 	end
-	ns.print("journal des butins (" .. #j .. ") :")
+	ns.print(L.JOURNAL_TITRE:format(#j))
 	for _, ligne in ipairs(j) do
 		ns.print("  " .. ligne)
 	end
@@ -152,7 +153,7 @@ local function BuildPanel()
 
 	panel.titre = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	panel.titre:SetPoint("TOPLEFT")
-	panel.titre:SetText("|cff7fbf3fRécolte|r  |cff808080session · total|r")
+	panel.titre:SetText(L.TITRE_RECOLTE)
 
 	-- la rangée de mini-boutons du HUD vit au-dessus du panneau, pas au
 	-- milieu de la vue
@@ -177,7 +178,7 @@ local function BuildPanel()
 
 	panel.sacTitre = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	panel.sacTitre:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -12)
-	panel.sacTitre:SetText("|cff7fbf3fBesace|r  |cff808080selon le métier|r")
+	panel.sacTitre:SetText(L.TITRE_BESACE)
 
 	panel.sacLignes = {}
 	prev = panel.sacTitre
@@ -206,7 +207,7 @@ end
 local function Refresh()
 	if not panel or not panel:IsShown() then return end
 
-	panel.resume:SetText(ns.SessionResume() or "|cff808080rien cette session|r")
+	panel.resume:SetText(ns.SessionResume() or L.RIEN_SESSION)
 
 	-- lignes par objet, triées par récolte de session
 	local tri = {}
@@ -220,7 +221,7 @@ local function Refresh()
 		if item then
 			local rec = MoissonDB.objets[item.id]
 			local icone = rec and rec.icone or 134400
-			local nom = (rec and rec.nom) or GetItemInfo(item.id) or ("objet " .. item.id)
+			local nom = (rec and rec.nom) or GetItemInfo(item.id) or L.OBJET_INCONNU:format(item.id)
 			local total = rec and rec.total or item.n
 			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r |cff808080· %d|r  %s",
 				icone, item.n, total, nom)
@@ -253,7 +254,7 @@ local function RefreshBesace()
 	for i = 1, MAX_SACS do
 		local fs, item = panel.sacLignes[i], tri[i]
 		if item then
-			local nom = GetItemInfo(item.id) or ("objet " .. item.id)
+			local nom = GetItemInfo(item.id) or L.OBJET_INCONNU:format(item.id)
 			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r  %s", item.icone, item.n, nom)
 			fs:Show()
 		else
@@ -266,24 +267,24 @@ end
 
 local function OnLoot(msg)
 	if not isSelfLoot(msg) then
-		dbg("ignoré (pas un butin personnel) : " .. msg)
+		dbg(L.J_IGNORE .. msg)
 		return
 	end
 	local link = msg:match("|Hitem:.-|h.-|h")
 	if not link then
-		dbg("pas de lien d'objet dans : " .. msg)
+		dbg(L.J_SANS_LIEN .. msg)
 		return
 	end
 	local id = tonumber(link:match("item:(%d+)"))
 	if not id then
-		dbg("pas d'itemID dans le lien : " .. msg)
+		dbg(L.J_SANS_ID .. msg)
 		return
 	end
 
 	local _, _, _, _, icone, classID, subClassID = GetItemInfoInstant(id)
 	local cat = Categorie(id, classID, subClassID)
 	if not cat then
-		dbg(("%s : classe %s/%s → non suivie"):format(link, tostring(classID), tostring(subClassID)))
+		dbg(L.J_NON_SUIVIE:format(link, tostring(classID), tostring(subClassID)))
 		return
 	end
 
@@ -301,7 +302,7 @@ local function OnLoot(msg)
 
 	session[id] = (session[id] or 0) + qte
 	sessionCats[cat] = (sessionCats[cat] or 0) + qte
-	dbg(("compté : %s x%d (%s, classe %s/%s)"):format(link, qte, CATS[cat].nom,
+	dbg(L.J_COMPTE:format(link, qte, CATS[cat].nom,
 		tostring(classID), tostring(subClassID)))
 
 	Refresh()
@@ -321,7 +322,7 @@ function ns.CompteursOnHide()
 end
 
 function ns.Bilan()
-	ns.print("bilan de récolte (session · total) :")
+	ns.print(L.BILAN_TITRE)
 	local rien = true
 	for _, cat in ipairs(ORDRE_CATS) do
 		local s, g = sessionCats[cat] or 0, MoissonDB.cats[cat] or 0
@@ -331,7 +332,7 @@ function ns.Bilan()
 				CATS[cat].icone, CATS[cat].nom, s, g))
 		end
 	end
-	if rien then ns.print("  rien pour l'instant — va cueillir !") end
+	if rien then ns.print(L.BILAN_VIDE) end
 end
 
 function ns.Raz(tout)
@@ -340,9 +341,9 @@ function ns.Raz(tout)
 	if tout then
 		wipe(MoissonDB.objets)
 		wipe(MoissonDB.cats)
-		ns.print("compteurs globaux et session remis à zéro.")
+		ns.print(L.RAZ_TOUT)
 	else
-		ns.print("compteurs de session remis à zéro.")
+		ns.print(L.RAZ_SESSION)
 	end
 	Refresh()
 end
@@ -353,16 +354,16 @@ local nbEvents = 0 -- messages CHAT_MSG_LOOT reçus, avant tout filtrage
 -- donc la détection de préfixe est exercée pour de vrai) puis retire les
 -- comptes fictifs. Diagnostique toute la chaîne sans quitter la capitale.
 function ns.TestCompteurs()
-	ns.print(("auto-test — %d message(s) CHAT_MSG_LOOT reçu(s) depuis la connexion."):format(nbEvents))
+	ns.print(L.TEST_ENTETE:format(nbEvents))
 	local lien = "|cffffffff|Hitem:2447::::::::20:::::::|h[Pacifique]|h|r"
 	local avant = session[2447] or 0
 	OnLoot(LOOT_ITEM_SELF:format(lien))
 	OnLoot(LOOT_ITEM_SELF_MULTIPLE:format(lien, 3))
 	local delta = (session[2447] or 0) - avant
 	if delta == 4 then
-		ns.print("chaîne de comptage |cff7fbf3fOK|r (4 fictifs comptés puis retirés).")
+		ns.print(L.TEST_OK)
 	else
-		ns.print(("|cffff4040ÉCHEC|r : %d compté(s) au lieu de 4 — lance /moisson journal."):format(delta))
+		ns.print(L.TEST_KO:format(delta))
 	end
 	if delta > 0 then
 		session[2447] = avant > 0 and avant or nil
@@ -395,8 +396,8 @@ function ns.InitCompteurs()
 		-- toute erreur remonte en chat ET au journal : rien ne doit s'avaler
 		local ok, err = pcall(OnLoot, msg)
 		if not ok then
-			journal("ERREUR : " .. tostring(err))
-			ns.print("|cffff4040erreur compteur :|r " .. tostring(err))
+			journal(L.J_ERREUR .. tostring(err))
+			ns.print(L.ERREUR_COMPTEUR .. tostring(err))
 		end
 	end)
 end

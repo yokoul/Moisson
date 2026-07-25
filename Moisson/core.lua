@@ -9,6 +9,7 @@ local ADDON, ns = ...
 local Minimap = _G.Minimap
 local MT = getmetatable(Minimap).__index
 local UpdateRotation = _G.Minimap_UpdateRotationSetting or function() end
+local L = ns.L
 
 local DB_VERSION = 2
 
@@ -101,7 +102,7 @@ coordsFS:SetTextColor(1, 0.82, 0)
 coordsFS:Hide()
 
 local sourisFS = texts:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-sourisFS:SetText("— SOURIS ACTIVE —\n|cffcccccc(survol des points et pins : identification)|r")
+sourisFS:SetText(L.SOURIS_ACTIVE)
 sourisFS:SetTextColor(1, 0.3, 0.3)
 sourisFS:SetPoint("CENTER", hud, "CENTER", 0, -24)
 sourisFS:Hide()
@@ -114,7 +115,7 @@ fleche:SetPoint("CENTER")
 fleche:SetTexture("Interface\\Minimap\\MinimapArrow")
 fleche:Hide()
 
-local CARDINAUX = { "N", "NE", "E", "SE", "S", "SO", "O", "NO" }
+local CARDINAUX = L.CARDINAUX
 local cards = {}
 for i = 1, 8 do
 	local principal = (i % 2 == 1)
@@ -335,9 +336,9 @@ end
 -- application du mode de fond courant (invisible / radar / carte)
 local FOND_SUIVANT = { invisible = "radar", radar = "carte", carte = "invisible" }
 local FOND_LIBELLE = {
-	invisible = "fond invisible",
-	radar = "radar (détections visibles, terrain éteint)",
-	carte = "carte",
+	invisible = L.FOND_INVISIBLE,
+	radar = L.FOND_RADAR,
+	carte = L.FOND_CARTE,
 }
 
 local function ApplyFond()
@@ -362,7 +363,7 @@ function Moisson_ToggleFond()
 	if Minimap:GetParent() ~= hud then return end
 	db.fondmode = FOND_SUIVANT[db.fondmode] or "invisible"
 	ApplyFond()
-	print_(FOND_LIBELLE[db.fondmode] .. ".")
+	print_(FOND_LIBELLE[db.fondmode])
 end
 
 -- ------------------------------------------------------- ancrage plein écran --
@@ -581,16 +582,16 @@ local function NewBouton(offsetX, texture, tooltip, onClick)
 	return b
 end
 
-NewBouton(-33, "Interface\\CURSOR\\Point", "Souris (inspecter les pins)", function()
+NewBouton(-33, "Interface\\CURSOR\\Point", L.BTN_SOURIS, function()
 	Moisson_ToggleMouse()
 end)
-NewBouton(-11, "Interface\\WorldMap\\WorldMap-Icon", "Fond : invisible / radar / carte", function()
+NewBouton(-11, "Interface\\WorldMap\\WorldMap-Icon", L.BTN_FOND, function()
 	Moisson_ToggleFond()
 end)
-NewBouton(11, "Interface\\Buttons\\UI-OptionsButton", "Options", function()
+NewBouton(11, "Interface\\Buttons\\UI-OptionsButton", L.BTN_OPTIONS, function()
 	if ns.OpenOptions then ns.OpenOptions() else ns.Aide() end
 end)
-NewBouton(33, "Interface\\Buttons\\UI-Panel-MinimizeButton-Up", "Fermer", function()
+NewBouton(33, "Interface\\Buttons\\UI-Panel-MinimizeButton-Up", L.BTN_FERMER, function()
 	Moisson_Toggle(false)
 end)
 
@@ -599,16 +600,16 @@ end)
 function Moisson_Toggle(force)
 	if force == nil then force = not hud:IsShown() end
 	if force and InCombatLockdown() and db.combat then
-		print_("HUD indisponible en combat.")
+		print_(L.COMBAT_INDISPO)
 		return
 	end
 	hud:SetShown(force)
 end
 
 BINDING_HEADER_MOISSON = "Moisson"
-BINDING_NAME_MOISSON_TOGGLE = "Afficher / masquer le HUD"
-BINDING_NAME_MOISSON_MOUSE = "Basculer la souris (HUD ouvert)"
-BINDING_NAME_MOISSON_FOND = "Basculer le fond de carte (HUD ouvert)"
+BINDING_NAME_MOISSON_TOGGLE = L.BIND_TOGGLE
+BINDING_NAME_MOISSON_MOUSE = L.BIND_MOUSE
+BINDING_NAME_MOISSON_FOND = L.BIND_FOND
 
 -- ---------------------------------------------------- application des options --
 
@@ -770,23 +771,24 @@ end)
 -- -------------------------------------------------------------------- slash --
 
 function ns.Aide()
-	print_("commandes :")
-	print_("  /moisson — afficher/masquer le HUD")
-	print_("  /moisson options — panneau de réglages")
-	print_("  /moisson souris — activer la souris (tooltips des pins)")
-	print_("  /moisson fond — cycle invisible / radar (détections) / carte")
-	print_("  /moisson rotation — carte fixe ou rotative")
-	print_("  /moisson taille 0.3–1.2 · echelle 1–2 · alpha 0–1 · cardalpha 0–1")
-	print_("  /moisson compteurs — panneau de récolte on/off")
-	print_("  /moisson bilan — totaux en chat")
-	print_("  /moisson raz — remise à zéro session (« raz tout » : global)")
-	print_("  /moisson test — auto-test des compteurs · journal — traces des butins")
+	for _, ligne in ipairs(L.AIDE) do
+		print_(ligne)
+	end
 end
+
+-- les commandes existent en français et en anglais
+local ALIAS = {
+	mouse = "souris", background = "fond", size = "taille", scale = "echelle",
+	counters = "compteurs", summary = "bilan", log = "journal", reset = "raz",
+	help = "aide", all = "tout",
+}
 
 SLASH_MOISSON1 = "/moisson"
 SlashCmdList["MOISSON"] = function(input)
 	input = (input or ""):lower():gsub("^%s+", "")
 	local cmd, arg = input:match("^(%S*)%s*(.*)$")
+	cmd = ALIAS[cmd] or cmd
+	arg = ALIAS[arg] or arg
 	if cmd == "" then
 		Moisson_Toggle()
 	elseif cmd == "options" then
@@ -797,47 +799,47 @@ SlashCmdList["MOISSON"] = function(input)
 		Moisson_ToggleFond()
 	elseif cmd == "rotation" then
 		ns.Apply.rotation(not db.rotation)
-		print_("rotation " .. (db.rotation and "activée" or "désactivée") .. ".")
+		print_(db.rotation and L.ROTATION_ON or L.ROTATION_OFF)
 	elseif cmd == "taille" then
 		local v = tonumber(arg)
 		if v and v >= 0.3 and v <= 1.2 then
 			ns.Apply.taille(v)
-			print_("taille : " .. v)
+			print_(L.VAL_TAILLE:format(v))
 		else
-			print_("taille attendue entre 0.3 et 1.2.")
+			print_(L.ERR_TAILLE)
 		end
 	elseif cmd == "cardalpha" then
 		local v = tonumber(arg)
 		if v and v >= 0 and v <= 1 then
 			ns.Apply.cardalpha(v)
-			print_("transparence des cardinaux : " .. v)
+			print_(L.VAL_CARDALPHA:format(v))
 		else
-			print_("valeur attendue entre 0 et 1.")
+			print_(L.ERR_01)
 		end
 	elseif cmd == "echelle" then
 		local v = tonumber(arg)
 		if v and v >= 1 and v <= 2 then
 			ns.Apply.echelle(v)
-			print_("échelle des pins : " .. v)
+			print_(L.VAL_ECHELLE:format(v))
 		else
-			print_("échelle attendue entre 1 et 2.")
+			print_(L.ERR_ECHELLE)
 		end
 	elseif cmd == "alpha" then
 		local v = tonumber(arg)
 		if v and v >= 0 and v <= 1 then
 			ns.Apply.alpha(v)
-			print_("alpha : " .. v)
+			print_(L.VAL_ALPHA:format(v))
 		else
-			print_("alpha attendu entre 0 et 1.")
+			print_(L.ERR_01)
 		end
 	elseif cmd == "compteurs" then
 		ns.Apply.compteurs(not db.compteurs)
-		print_("compteurs " .. (db.compteurs and "affichés" or "masqués") .. ".")
+		print_(db.compteurs and L.COMPTEURS_ON or L.COMPTEURS_OFF)
 	elseif cmd == "bilan" then
 		if ns.Bilan then ns.Bilan() end
 	elseif cmd == "debug" then
 		ns.debugLoot = not ns.debugLoot
-		print_("debug loot " .. (ns.debugLoot and "activé — ramasse quelque chose et lis le chat" or "désactivé") .. ".")
+		print_(ns.debugLoot and L.DEBUG_ON or L.DEBUG_OFF)
 	elseif cmd == "test" then
 		if ns.TestCompteurs then ns.TestCompteurs() end
 	elseif cmd == "journal" then

@@ -49,6 +49,15 @@ Des raccourcis clavier sont disponibles dans Options → Raccourcis → Moisson.
 ./install.sh   # rsync vers le dossier AddOns de Classic Era
 ```
 
+## Langues
+
+enUS (défaut) et frFR — voir `Moisson/locales.lua`. Les commandes slash
+existent dans les deux langues (`/moisson souris` = `/moisson mouse`).
+
+## Licence
+
+GPLv3 — voir [LICENSE](LICENSE).
+
 ## Crédits
 
 - Hizuro — FarmHud, l'original, pour l'idée et des années de bons services.

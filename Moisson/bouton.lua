@@ -54,9 +54,9 @@ function ns.InitBoutonMinimap()
 		GameTooltip:SetText("|cff7fbf3fMoisson|r")
 		local resume = ns.SessionResume and ns.SessionResume()
 		if resume then
-			GameTooltip:AddLine("Session : " .. resume, 1, 1, 1)
+			GameTooltip:AddLine(ns.L.MMB_SESSION .. resume, 1, 1, 1)
 		end
-		GameTooltip:AddLine("Clic gauche : HUD · Clic droit : options", 0.7, 0.7, 0.7)
+		GameTooltip:AddLine(ns.L.MMB_TIP, 0.7, 0.7, 0.7)
 		GameTooltip:Show()
 	end)
 	mmb:SetScript("OnLeave", function() GameTooltip:Hide() end)
