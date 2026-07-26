@@ -9,6 +9,7 @@ local ADDON, ns = ...
 -- les globales historiques ont été retirées du client 1.15 → API C_Item
 local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
 local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
+local GetItemCount = (C_Item and C_Item.GetItemCount) or _G.GetItemCount
 local L = ns.L
 
 -- catégories de farm. Le tri fiable vient des listes d'itemIDs (donnees.lua) :
@@ -155,13 +156,6 @@ local function BuildPanel()
 	panel.titre:SetPoint("TOPLEFT")
 	panel.titre:SetText(L.TITRE_RECOLTE)
 
-	-- la rangée de mini-boutons du HUD vit au-dessus du panneau, pas au
-	-- milieu de la vue
-	if ns.boutonsRow then
-		ns.boutonsRow:ClearAllPoints()
-		ns.boutonsRow:SetPoint("BOTTOMLEFT", panel, "TOPLEFT", 44, 10)
-	end
-
 	panel.resume = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	panel.resume:SetPoint("TOPLEFT", panel.titre, "BOTTOMLEFT", 0, -4)
 	panel.resume:SetJustifyH("LEFT")
@@ -222,9 +216,11 @@ local function Refresh()
 			local rec = MoissonDB.objets[item.id]
 			local icone = rec and rec.icone or 134400
 			local nom = (rec and rec.nom) or GetItemInfo(item.id) or L.OBJET_INCONNU:format(item.id)
-			local total = rec and rec.total or item.n
-			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r |cff808080· %d|r  %s",
-				icone, item.n, total, nom)
+			-- « en sac » vient des sacs réels : les stacks d'avant l'addon
+			-- comptent aussi (le total, lui, ne cumule que ce qu'on a vu passer)
+			local sac = GetItemCount and GetItemCount(item.id) or 0
+			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r |cff7fbf3f· %d|r  %s",
+				icone, item.n, sac, nom)
 			fs:Show()
 		else
 			fs:Hide()
@@ -389,6 +385,7 @@ function ns.InitCompteurs()
 	ev:RegisterEvent("BAG_UPDATE_DELAYED")
 	ev:SetScript("OnEvent", function(_, event, msg)
 		if event == "BAG_UPDATE_DELAYED" then
+			Refresh() -- la colonne « en sac » suit aussi ventes et dépôts
 			RefreshBesace()
 			return
 		end

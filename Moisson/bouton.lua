@@ -1,5 +1,7 @@
 -- Moisson — bouton minimap (déplaçable sur le pourtour, clic gauche = HUD,
--- clic droit = options, tooltip = résumé de la session).
+-- clic droit = options, shift-clic = fond, clic milieu = souris, tooltip =
+-- résumé de la session). HUD ouvert, le bouton reste en place : il est parqué
+-- sur le leurre avec le reste des meubles de la minimap.
 
 local ADDON, ns = ...
 
@@ -26,7 +28,7 @@ function ns.InitBoutonMinimap()
 	mmb:SetSize(31, 31)
 	mmb:SetFrameStrata("MEDIUM")
 	mmb:SetFrameLevel(8)
-	mmb:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	mmb:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 	mmb:RegisterForDrag("LeftButton")
 	mmb:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
 
@@ -39,6 +41,10 @@ function ns.InitBoutonMinimap()
 	mmb:SetScript("OnClick", function(_, button)
 		if button == "RightButton" then
 			if ns.OpenOptions then ns.OpenOptions() end
+		elseif button == "MiddleButton" then
+			Moisson_ToggleMouse()
+		elseif IsShiftKeyDown() then
+			Moisson_ToggleFond()
 		else
 			Moisson_Toggle()
 		end
@@ -57,6 +63,7 @@ function ns.InitBoutonMinimap()
 			GameTooltip:AddLine(ns.L.MMB_SESSION .. resume, 1, 1, 1)
 		end
 		GameTooltip:AddLine(ns.L.MMB_TIP, 0.7, 0.7, 0.7)
+		GameTooltip:AddLine(ns.L.MMB_TIP2, 0.7, 0.7, 0.7)
 		GameTooltip:Show()
 	end)
 	mmb:SetScript("OnLeave", function() GameTooltip:Hide() end)

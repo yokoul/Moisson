@@ -3,7 +3,7 @@
 ## Notes: Full-screen harvest HUD with farm counters (session & global), bag view by profession and radar mode. Mechanism inspired by FarmHud (Hizuro) — full rewrite.
 ## Notes-frFR: HUD de récolte plein écran avec compteurs de farm (session & global), besace par métier et mode radar. Mécanisme inspiré de FarmHud (Hizuro) — réécriture complète.
 ## Author: yokoul
-## Version: 0.9.0
+## Version: 0.9.1
 ## IconTexture: Interface\AddOns\Moisson\img\logo-minimap.png
 ## SavedVariables: MoissonDB
 ## OptionalDeps: GatherMate2, Questie, ElvUI

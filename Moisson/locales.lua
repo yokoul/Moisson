@@ -13,12 +13,6 @@ local L = {
 	FOND_RADAR = "radar (tracking dots visible, terrain dimmed).",
 	FOND_CARTE = "map background shown.",
 
-	-- boutons à l'écran
-	BTN_SOURIS = "Mouse (inspect pins)",
-	BTN_FOND = "Background: hidden / radar / map",
-	BTN_OPTIONS = "Options",
-	BTN_FERMER = "Close",
-
 	-- raccourcis clavier
 	BIND_TOGGLE = "Show / hide the HUD",
 	BIND_MOUSE = "Toggle mouse (HUD open)",
@@ -26,13 +20,14 @@ local L = {
 
 	-- bouton minimap
 	MMB_TIP = "Left click: HUD · Right click: options",
+	MMB_TIP2 = "HUD open — Shift-click: background · Middle click: mouse",
 	MMB_SESSION = "Session: ",
 
 	-- compteurs
 	CAT_HERBES = "Herbs", CAT_MINERAIS = "Ores", CAT_GEMMES = "Gems",
 	CAT_CUIRS = "Leather", CAT_TISSUS = "Cloth", CAT_VIANDES = "Meat",
 	CAT_ELEMS = "Elementals", CAT_AUTRES = "Other",
-	TITRE_RECOLTE = "|cff7fbf3fHarvest|r  |cff808080session · total|r",
+	TITRE_RECOLTE = "|cff7fbf3fHarvest|r  |cff808080session · |r|cff7fbf3fin bags|r",
 	TITRE_BESACE = "|cff7fbf3fBags|r  |cff808080by profession|r",
 	RIEN_SESSION = "|cff808080nothing this session|r",
 	OBJET_INCONNU = "item %d",
@@ -89,7 +84,6 @@ local L = {
 	OPT_CARDINAUX = "Cardinal points (N/NE/E/…)",
 	OPT_COORDS = "Player coordinates",
 	OPT_COMPTEURS = "Harvest counters panel",
-	OPT_BOUTONS = "On-screen buttons (mouse, background, options, close)",
 	OPT_SOURISALT = "Mouse while Alt is held (hover identification)",
 	OPT_COMBAT = "Hide the HUD in combat",
 	OPT_TAILLE = "HUD size",
@@ -118,22 +112,18 @@ if GetLocale() == "frFR" then
 	L.FOND_RADAR = "radar (détections visibles, terrain éteint)."
 	L.FOND_CARTE = "carte."
 
-	L.BTN_SOURIS = "Souris (inspecter les pins)"
-	L.BTN_FOND = "Fond : invisible / radar / carte"
-	L.BTN_OPTIONS = "Options"
-	L.BTN_FERMER = "Fermer"
-
 	L.BIND_TOGGLE = "Afficher / masquer le HUD"
 	L.BIND_MOUSE = "Basculer la souris (HUD ouvert)"
 	L.BIND_FOND = "Basculer le fond de carte (HUD ouvert)"
 
 	L.MMB_TIP = "Clic gauche : HUD · Clic droit : options"
+	L.MMB_TIP2 = "HUD ouvert — Maj-clic : fond · Clic molette : souris"
 	L.MMB_SESSION = "Session : "
 
 	L.CAT_HERBES = "Herbes"; L.CAT_MINERAIS = "Minerais"; L.CAT_GEMMES = "Gemmes"
 	L.CAT_CUIRS = "Cuirs"; L.CAT_TISSUS = "Tissus"; L.CAT_VIANDES = "Viandes"
 	L.CAT_ELEMS = "Élémentaires"; L.CAT_AUTRES = "Autres"
-	L.TITRE_RECOLTE = "|cff7fbf3fRécolte|r  |cff808080session · total|r"
+	L.TITRE_RECOLTE = "|cff7fbf3fRécolte|r  |cff808080session · |r|cff7fbf3fen sac|r"
 	L.TITRE_BESACE = "|cff7fbf3fBesace|r  |cff808080selon le métier|r"
 	L.RIEN_SESSION = "|cff808080rien cette session|r"
 	L.OBJET_INCONNU = "objet %d"
@@ -187,7 +177,6 @@ if GetLocale() == "frFR" then
 	L.OPT_CARDINAUX = "Points cardinaux (N/NE/E/…)"
 	L.OPT_COORDS = "Coordonnées du joueur"
 	L.OPT_COMPTEURS = "Panneau des compteurs de récolte"
-	L.OPT_BOUTONS = "Boutons à l'écran (souris, fond, options, fermer)"
 	L.OPT_SOURISALT = "Souris tant qu'Alt est enfoncée (identification au survol)"
 	L.OPT_COMBAT = "Masquer le HUD en combat"
 	L.OPT_TAILLE = "Taille du HUD"

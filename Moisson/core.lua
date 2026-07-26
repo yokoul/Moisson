@@ -26,7 +26,6 @@ local DEFAUTS = {
 	cardinaux = true,
 	cardalpha = 0.5,   -- transparence des points cardinaux
 	compteurs = true,
-	boutons   = false,
 	sourisalt = true,  -- souris fugace : active tant qu'Alt est enfoncée
 	combat    = false, -- masquer le HUD en combat (comme FarmHud : non par défaut)
 	bouton_angle = 200, -- position du bouton minimap
@@ -493,7 +492,6 @@ hud:SetScript("OnShow", function(self)
 	fleche:Show()
 	UpdateDecor()
 	decorTicker = C_Timer.NewTicker(0.05, UpdateDecor)
-	self.boutons:SetShown(db.boutons)
 	if ns.CompteursOnShow then ns.CompteursOnShow() end
 end)
 
@@ -555,62 +553,6 @@ hud:SetScript("OnHide", function(self)
 
 	if ns.CompteursOnHide then ns.CompteursOnHide() end
 	saved = nil
-end)
-
--- ------------------------------------------------------------------ boutons --
-
--- rangée de boutons : une platine à 4 alvéoles (btn-bg) accueille les
--- médaillons ; les fractions X viennent de la mesure des alvéoles du visuel.
--- La texture est un canevas 512×256 (puissances de deux : pas de rembourrage
--- surprise du client), la plaque occupe le bandeau haut → SetTexCoord.
-local PLATINE_L, PLATINE_H = 180, 53
--- les médaillons COUVRENT l'anneau des alvéoles (un seul anneau visible)
-local TAILLE_BOUTON, TAILLE_SURVOL = 34, 44
-
-local boutons = CreateFrame("Frame", nil, hud)
-boutons:SetSize(PLATINE_L, PLATINE_H)
-boutons:SetPoint("CENTER", hud, "CENTER", 0, -60)
-boutons:Hide()
-hud.boutons = boutons
-ns.boutonsRow = boutons -- le panneau des compteurs se l'annexe (rangée discrète)
-
-local platine = boutons:CreateTexture(nil, "BACKGROUND")
-platine:SetAllPoints()
-platine:SetTexture("Interface\\AddOns\\Moisson\\img\\btn-bg.png")
-platine:SetTexCoord(0, 1, 0, 0.5859)
-
-local function NewBouton(frac, texture, tooltip, onClick)
-	local b = CreateFrame("Button", nil, boutons)
-	b:SetSize(TAILLE_BOUTON, TAILLE_BOUTON)
-	b:SetPoint("CENTER", boutons, "LEFT", frac * PLATINE_L, 2)
-	b:SetNormalTexture(texture)
-	b:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight", "ADD")
-	b:SetScript("OnClick", onClick)
-	b:SetScript("OnEnter", function(self)
-		self:SetSize(TAILLE_SURVOL, TAILLE_SURVOL) -- le médaillon sort de l'alvéole
-		GameTooltip:SetOwner(self, "ANCHOR_TOP")
-		GameTooltip:SetText(tooltip)
-		GameTooltip:Show()
-	end)
-	b:SetScript("OnLeave", function(self)
-		self:SetSize(TAILLE_BOUTON, TAILLE_BOUTON)
-		GameTooltip:Hide()
-	end)
-	return b
-end
-
--- fractions mesurées sur le rendu in-game (capture 2560×1440), pas sur le fichier
-NewBouton(0.173, "Interface\\AddOns\\Moisson\\img\\btn-souris.png", L.BTN_SOURIS, function()
-	Moisson_ToggleMouse()
-end)
-NewBouton(0.390, "Interface\\AddOns\\Moisson\\img\\btn-fond.png", L.BTN_FOND, function()
-	Moisson_ToggleFond()
-end)
-NewBouton(0.594, "Interface\\AddOns\\Moisson\\img\\btn-options.png", L.BTN_OPTIONS, function()
-	if ns.OpenOptions then ns.OpenOptions() else ns.Aide() end
-end)
-NewBouton(0.797, "Interface\\AddOns\\Moisson\\img\\btn-fermer.png", L.BTN_FERMER, function()
-	Moisson_Toggle(false)
 end)
 
 -- ------------------------------------------------------------------- toggle --
@@ -687,10 +629,6 @@ ns.Apply = {
 		db.compteurs = v
 		if hud:IsShown() and ns.CompteursOnShow then ns.CompteursOnShow() end
 	end,
-	boutons = function(v)
-		db.boutons = v
-		if hud:IsShown() then boutons:SetShown(v) end
-	end,
 	sourisalt = function(v)
 		db.sourisalt = v
 	end,
@@ -762,6 +700,12 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
 			end
 			MoissonDB.cats = cats
 			MoissonDB.version = 5
+		end
+		-- v6 : la rangée de boutons à l'écran a disparu (tout vit sur le
+		-- bouton minimap)
+		if MoissonDB.version < 6 then
+			MoissonDB.opts.boutons = nil
+			MoissonDB.version = 6
 		end
 		db = MoissonDB.opts
 		ns.db = db

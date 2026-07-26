@@ -10,7 +10,6 @@ local COCHES = {
 	{ cle = "cardinaux", txt = L.OPT_CARDINAUX },
 	{ cle = "coords",    txt = L.OPT_COORDS },
 	{ cle = "compteurs", txt = L.OPT_COMPTEURS },
-	{ cle = "boutons",   txt = L.OPT_BOUTONS },
 	{ cle = "sourisalt", txt = L.OPT_SOURISALT },
 	{ cle = "combat",    txt = L.OPT_COMBAT },
 }
@@ -34,7 +33,7 @@ function ns.InitOptions()
 	scroll:SetPoint("BOTTOMRIGHT", -26, 4)
 
 	local content = CreateFrame("Frame", nil, scroll)
-	content:SetSize(560, 1010)
+	content:SetSize(560, 980)
 	scroll:SetScrollChild(content)
 
 	-- la bannière porte déjà le nom de l'addon
