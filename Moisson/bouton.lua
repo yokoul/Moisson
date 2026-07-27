@@ -32,25 +32,21 @@ function ns.InitBoutonMinimap()
 	mmb:RegisterForDrag("LeftButton")
 	mmb:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
 
-	-- le médaillon Moisson embarque son propre anneau doré : pas de bordure
-	-- de tracking Blizzard par-dessus
-	local icon = mmb:CreateTexture(nil, "BACKGROUND")
-	icon:SetAllPoints()
-	icon:SetTexture("Interface\\AddOns\\Moisson\\img\\logo-minimap.png")
+	-- anatomie LibDBIcon (icône de contenu + anneau de tracking Blizzard) :
+	-- c'est LE pattern que les skins de boutons minimap (ElvUI, MBB, Square
+	-- Minimap Buttons…) savent démonter — ils strippent l'anneau et recadrent
+	-- l'icône. Un médaillon tout-en-un ressortait sombre et minuscule une
+	-- fois passé à leur moulinette.
+	local border = mmb:CreateTexture(nil, "OVERLAY")
+	border:SetSize(53, 53)
+	border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+	border:SetPoint("TOPLEFT")
 
-	-- des skins (ElvUI, Square Minimap Buttons…) recadrent les icônes des
-	-- boutons minimap par SetTexCoord : l'anneau disparaît et le centre semble
-	-- zoomé — on reverrouille le plein cadre derrière eux.
-	local verrou = false
-	hooksecurefunc(icon, "SetTexCoord", function(self)
-		if verrou then return end
-		verrou = true
-		self:SetTexCoord(0, 1, 0, 1)
-		verrou = false
-	end)
-	C_Timer.After(1, function()
-		icon:SetTexture("Interface\\AddOns\\Moisson\\img\\logo-minimap.png")
-	end)
+	local icon = mmb:CreateTexture(nil, "ARTWORK")
+	icon:SetSize(17, 17)
+	icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+	icon:SetPoint("TOPLEFT", 7, -6)
+	icon:SetTexture("Interface\\AddOns\\Moisson\\img\\logo-minimap.png")
 
 	mmb:SetScript("OnClick", function(_, button)
 		if button == "RightButton" then

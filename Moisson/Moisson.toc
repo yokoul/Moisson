@@ -4,7 +4,7 @@
 ## Notes-frFR: HUD de récolte plein écran avec compteurs de farm (session & global), besace par métier et mode radar. Mécanisme inspiré de FarmHud (Hizuro) — réécriture complète.
 ## Author: yokoul
 ## Version: 0.9.1
-## IconTexture: Interface\AddOns\Moisson\img\logo-minimap.png
+## IconTexture: Interface\AddOns\Moisson\img\logo-medaillon.png
 ## SavedVariables: MoissonDB
 ## OptionalDeps: GatherMate2, Questie, ElvUI
 ## X-Credits: Hizuro (FarmHud), for the minimap-hijack idea.
