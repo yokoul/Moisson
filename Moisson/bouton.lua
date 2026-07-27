@@ -38,6 +38,20 @@ function ns.InitBoutonMinimap()
 	icon:SetAllPoints()
 	icon:SetTexture("Interface\\AddOns\\Moisson\\img\\logo-minimap.png")
 
+	-- des skins (ElvUI, Square Minimap Buttons…) recadrent les icônes des
+	-- boutons minimap par SetTexCoord : l'anneau disparaît et le centre semble
+	-- zoomé — on reverrouille le plein cadre derrière eux.
+	local verrou = false
+	hooksecurefunc(icon, "SetTexCoord", function(self)
+		if verrou then return end
+		verrou = true
+		self:SetTexCoord(0, 1, 0, 1)
+		verrou = false
+	end)
+	C_Timer.After(1, function()
+		icon:SetTexture("Interface\\AddOns\\Moisson\\img\\logo-minimap.png")
+	end)
+
 	mmb:SetScript("OnClick", function(_, button)
 		if button == "RightButton" then
 			if ns.OpenOptions then ns.OpenOptions() end
