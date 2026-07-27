@@ -97,7 +97,9 @@ Mécanisme inspiré de FarmHud (Hizuro) — réécriture complète. GPLv3.
   (shift-click: background, middle click: mouse).
 - Harvest panel lines now show "session · in bags": the bag count reads your
   real bags (pre-addon stacks included) and follows every bag update.
-- Options panel logo and minimap button medallion updated.
+- Minimap button rebuilt on the standard LibDBIcon anatomy (content icon +
+  tracking border) so minimap button skins render it like any other addon.
+- New artwork: options panel logo, addon icon, project images.
 ```
 
 ## Upload
