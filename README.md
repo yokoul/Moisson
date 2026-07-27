@@ -15,16 +15,18 @@ de récolte qui n'existent pas dans l'original.
 - **Rotation radar** (optionnelle) : la carte tourne avec le joueur,
   points cardinaux N/NE/E/SE/S/SO/O/NO recalculés en continu.
 - **Compteurs de récolte** : herbes, minerais, gemmes, cuirs, tissus, viandes,
-  élémentaires — par objet avec icône, cumul **session** et **global**
-  (persistant). Panneau sur le HUD + `/moisson bilan` en chat.
+  élémentaires — par objet avec icône, récolte de la **session** et quantité
+  **en sac** (stocks antérieurs compris). Totaux globaux persistants par
+  catégorie via `/moisson bilan` en chat.
 - **Besace** : ce que les sacs contiennent pour le(s) métier(s) de récolte du
   personnage (herboristerie → herbes, minage → minerais et gemmes,
   dépeçage → cuirs).
 - **Mode radar** : le fond de carte cycle entre invisible, radar (alpha
   modéré + voile noir : les détections « Trouver les herbes/minerais »
   restent visibles sur terrain éteint) et carte.
-- **Coordonnées** du joueur, boutons à l'écran (souris, fond, aide, fermer),
-  masquage en combat (optionnel).
+- **Coordonnées** du joueur, masquage en combat (optionnel). Tout se pilote
+  depuis le bouton minimap : clic gauche = HUD, clic droit = options,
+  maj-clic = fond, clic molette = souris.
 - Un « leurre » occupe l'ancien emplacement de la minimap : les boutons
   d'addons (ElvUI, MinimapButtonButton, LibDBIcon…) restent à leur place.
 

@@ -38,7 +38,7 @@ function ns.InitOptions()
 
 	-- la bannière porte déjà le nom de l'addon
 	local logo = content:CreateTexture(nil, "ARTWORK")
-	logo:SetSize(280, 191) -- ratio du fichier 768×524
+	logo:SetSize(210, 215) -- ratio du fichier 309×316
 	logo:SetPoint("TOPLEFT", 16, -8)
 	logo:SetTexture("Interface\\AddOns\\Moisson\\img\\logo-primary.png")
 
