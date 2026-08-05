@@ -631,15 +631,56 @@ ns.Apply = {
 	end,
 	sourisalt = function(v)
 		db.sourisalt = v
+		-- décocher pendant qu'Alt tient la souris laisserait le mode collé
+		if not v and ns.AltRelache then ns.AltRelache() end
 	end,
 	combat = function(v)
 		db.combat = v
+		-- décocher pendant un combat qui a masqué le HUD : ne pas le faire
+		-- ressurgir tout seul à la fin du combat
+		if not v then hiddenByCombat = false end
 	end,
 }
 
 -- ------------------------------------------------------------------- events --
 
-local altSouris = false -- la souris courante a été activée par Alt
+-- ---- souris fugace : survivre à l'Alt+Tab -----------------------------------
+--
+-- MODIFIER_STATE_CHANGED ne garantit pas qu'un appui soit suivi d'un
+-- relâchement : dès que le joueur bascule sur une autre fenêtre, le « LALT = 0 »
+-- part à l'OS et jamais au client. Sans garde-fou, le mode clic reste armé et
+-- se réarme même tout seul au retour, quand WoW resynchronise ses modificateurs.
+
+local altSouris = false     -- la souris courante a été activée par Alt
+local altTouche             -- laquelle des deux Alt a armé le mode
+local altTicker             -- sonde le relâchement que l'événement a pu manquer
+local derniereFrame = 0     -- horodatage de la dernière frame rendue
+local GEL_FOCUS = 0.25      -- au-delà, la frame précédente date d'avant l'Alt+Tab
+
+local function AltRelache()
+	if altTicker then altTicker:Cancel(); altTicker = nil end
+	altTouche = nil
+	if altSouris then
+		altSouris = false
+		Moisson_ToggleMouse(false)
+	end
+end
+ns.AltRelache = AltRelache
+
+local function AltEnfonce(touche)
+	altSouris = true
+	altTouche = touche
+	Moisson_ToggleMouse(true)
+	-- l'événement de relâchement peut se perdre : on sonde l'état réel du
+	-- clavier pour ne jamais rester collé en mode clic
+	altTicker = altTicker or C_Timer.NewTicker(0.1, function()
+		if not IsAltKeyDown() or not hud:IsShown() then AltRelache() end
+	end)
+end
+
+hud:HookScript("OnUpdate", function() derniereFrame = GetTime() end)
+hud:HookScript("OnShow", function() derniereFrame = GetTime() end)
+hud:HookScript("OnHide", AltRelache)
 
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("ADDON_LOADED")
@@ -653,13 +694,19 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
 		if db and db.sourisalt and hud:IsShown()
 		and (arg1 == "LALT" or arg1 == "RALT") then
 			if arg2 == 1 then
-				if not Minimap:IsMouseEnabled() then
-					altSouris = true
-					Moisson_ToggleMouse(true)
+				-- appui « orphelin » sur la touche qui a armé : son relâchement
+				-- s'est perdu pendant l'Alt+Tab, on désarme au lieu de réarmer
+				if altSouris then
+					if arg1 == altTouche then AltRelache() end
+				-- premier rendu depuis un gel : c'est l'Alt du retour de focus,
+				-- pas une intention de cliquer
+				elseif GetTime() - derniereFrame > GEL_FOCUS then
+					return
+				elseif not Minimap:IsMouseEnabled() then
+					AltEnfonce(arg1)
 				end
-			elseif altSouris then
-				altSouris = false
-				Moisson_ToggleMouse(false)
+			elseif arg1 == altTouche then
+				AltRelache()
 			end
 		end
 		return
