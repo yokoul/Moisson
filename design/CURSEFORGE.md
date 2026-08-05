@@ -90,7 +90,45 @@ Mécanisme inspiré de FarmHud (Hizuro) — réécriture complète. GPLv3.
 
 ---
 
-## Changelog v0.9.1 (champ « changelog » de l'upload)
+## Changelog v0.9.2 (champ « changelog » de l'upload)
+
+Correctifs uniquement — aucune fonctionnalité nouvelle.
+
+```
+Bug fixes
+
+- Alt+Tab no longer leaves the transient mouse stuck on: the mouse mode now
+  cross-checks the real keyboard state instead of trusting key events alone.
+- Dragging the minimap button with the HUD open no longer throws it off
+  screen — it follows the placeholder, not the full-screen minimap.
+- HUD labels (arrow, cardinal points, coordinates) and the harvest panel now
+  draw on top of the gathering pins instead of underneath.
+- Unchecking "mouse while Alt is held" no longer leaves the mouse stuck on.
+- Unchecking "hide in combat" during a fight no longer makes the HUD pop back
+  up when combat ends.
+- Options panel: keybind capture is properly released when the panel closes,
+  only one button listens at a time, and rebinding is refused in combat.
+```
+
+**Version française (champ localisé, si tu en ajoutes un) :**
+
+```
+Correctifs
+
+- L'Alt+Tab ne laisse plus la souris fugace bloquée : le mode souris recoupe
+  l'état réel du clavier au lieu de se fier aux seuls événements de touche.
+- Déplacer le bouton minimap HUD ouvert ne l'envoie plus hors de l'écran — il
+  suit le leurre, pas la minimap partie en plein écran.
+- L'habillage du HUD (flèche, points cardinaux, coordonnées) et le panneau de
+  récolte se dessinent désormais au-dessus des pins, et non plus dessous.
+- Décocher « souris tant qu'Alt est enfoncée » ne laisse plus la souris bloquée.
+- Décocher « masquer en combat » pendant un combat ne fait plus réapparaître
+  le HUD à la fin de celui-ci.
+- Panneau d'options : la capture de raccourci est bien relâchée à la fermeture,
+  un seul bouton écoute à la fois, et la redéfinition est refusée en combat.
+```
+
+## Changelog v0.9.1
 
 ```
 - The on-screen button row is gone: everything lives on the minimap button
