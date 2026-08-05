@@ -11,7 +11,8 @@ local MT = getmetatable(Minimap).__index
 local UpdateRotation = _G.Minimap_UpdateRotationSetting or function() end
 local L = ns.L
 
-local DB_VERSION = 2
+-- la version du schéma vit dans MoissonDB.version, posée par la dernière
+-- migration atteinte (voir ADDON_LOADED)
 
 local DEFAUTS = {
 	taille    = 0.95,  -- fraction du plus petit côté de l'écran
@@ -92,9 +93,13 @@ local leurre = CreateFrame("Button", "MoissonLeurre", UIParent)
 leurre:Hide()
 leurre:EnableMouse(false)
 
+-- habillage (flèche, cardinaux, coordonnées, « souris active ») : il doit se
+-- lire PAR-DESSUS les pins. Sans niveau explicite, texts hérite de hud+1 et
+-- passait sous le cluster, posé au niveau 5 à l'ouverture.
 local texts = CreateFrame("Frame", nil, hud)
 texts:SetAllPoints()
 texts:EnableMouse(false)
+texts:SetFrameLevel(20)
 
 local coordsFS = texts:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 coordsFS:SetTextColor(1, 0.82, 0)

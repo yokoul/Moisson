@@ -151,6 +151,7 @@ local function BuildPanel()
 	panel = CreateFrame("Frame", "MoissonCompteurs", ns.hud)
 	panel:SetSize(260, 20 + MAX_LIGNES * 18 + 30 + MAX_SACS * 18)
 	panel:SetPoint("LEFT", ns.hud, "LEFT", 24, 0)
+	panel:SetFrameLevel(20) -- au-dessus du cluster de pins (niveau 5)
 
 	panel.titre = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	panel.titre:SetPoint("TOPLEFT")
