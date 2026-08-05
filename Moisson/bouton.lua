@@ -7,17 +7,28 @@ local ADDON, ns = ...
 
 local mmb
 
+-- HUD ouvert, le bouton est parqué sur le leurre — qui rejoue exactement la
+-- géométrie de la minimap d'origine. C'est donc lui l'ancre, jamais la Minimap
+-- partie en plein écran : s'y raccrocher enverrait le bouton au bord de l'écran
+-- avec un rayon de plusieurs centaines de pixels.
+local function Ancre()
+	return mmb:GetParent() or Minimap
+end
+
 local function UpdatePosition()
+	local ancre = Ancre()
 	local a = math.rad(ns.db.bouton_angle or 200)
-	local r = (Minimap:GetWidth() / 2) + 5
+	local r = (ancre:GetWidth() / 2) + 5
 	mmb:ClearAllPoints()
-	mmb:SetPoint("CENTER", Minimap, "CENTER", math.cos(a) * r, math.sin(a) * r)
+	mmb:SetPoint("CENTER", ancre, "CENTER", math.cos(a) * r, math.sin(a) * r)
 end
 
 local function OnDragUpdate()
-	local mx, my = Minimap:GetCenter()
+	local ancre = Ancre()
+	local mx, my = ancre:GetCenter()
+	if not mx then return end
 	local cx, cy = GetCursorPosition()
-	local s = Minimap:GetEffectiveScale()
+	local s = ancre:GetEffectiveScale()
 	ns.db.bouton_angle = math.deg(math.atan2(cy / s - my, cx / s - mx))
 	UpdatePosition()
 end
