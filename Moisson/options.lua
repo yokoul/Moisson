@@ -86,6 +86,8 @@ function ns.InitOptions()
 
 	-- ---- raccourcis clavier, définissables directement ici ----
 
+	local bindActif -- un seul bouton écoute le clavier à la fois
+
 	local function BindButton(command, label, anchorTo, offsetY)
 		local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
 		b:SetSize(300, 22)
@@ -94,8 +96,25 @@ function ns.InitOptions()
 			local key = GetBindingKey(command)
 			b:SetText(label .. " : " .. (key and GetBindingText(key) or L.OPT_NON_DEFINI))
 		end
+		-- rendre le clavier : le panneau peut se fermer avant qu'une touche
+		-- arrive, il ne faut pas rouvrir sur un bouton resté « en écoute »
+		local function stop()
+			if not b.ecoute then return end
+			b.ecoute = false
+			b:EnableKeyboard(false)
+			b:SetScript("OnKeyDown", nil)
+			if bindActif == stop then bindActif = nil end
+			refresh()
+		end
 		b:SetScript("OnClick", function(self)
 			if self.ecoute then return end
+			-- SetBinding est protégé en combat : inutile d'écouter pour rien
+			if InCombatLockdown() then
+				ns.print(L.OPT_BIND_COMBAT)
+				return
+			end
+			if bindActif then bindActif() end
+			bindActif = stop
 			self.ecoute = true
 			self:SetText(label .. " : |cffffd200" .. L.OPT_APPUIE .. "|r")
 			self:EnableKeyboard(true)
@@ -115,13 +134,11 @@ function ns.InitOptions()
 					SetBinding(combo, command)
 				end
 				SaveBindings(GetCurrentBindingSet())
-				self.ecoute = false
-				self:EnableKeyboard(false)
-				self:SetScript("OnKeyDown", nil)
-				refresh()
+				stop()
 			end)
 		end)
 		panel:HookScript("OnShow", refresh)
+		panel:HookScript("OnHide", stop)
 		refresh()
 		return b
 	end

@@ -98,6 +98,7 @@ local L = {
 	OPT_BIND_FOND = "Cycle map background",
 	OPT_NON_DEFINI = "|cff808080not bound|r",
 	OPT_APPUIE = "press a key… (Esc: clear)",
+	OPT_BIND_COMBAT = "keybindings cannot be changed in combat.",
 	OPT_RAZ_SESSION = "Reset session counters",
 	OPT_RAZ_TOUT = "Reset all (global)",
 	OPT_CREDITS = "Mechanism inspired by FarmHud (Hizuro) — full rewrite by yokoul. GPLv3.",
@@ -191,6 +192,7 @@ if GetLocale() == "frFR" then
 	L.OPT_BIND_FOND = "Basculer le fond de carte"
 	L.OPT_NON_DEFINI = "|cff808080non défini|r"
 	L.OPT_APPUIE = "appuie sur une touche… (Échap : effacer)"
+	L.OPT_BIND_COMBAT = "impossible de changer un raccourci en combat."
 	L.OPT_RAZ_SESSION = "RàZ compteurs session"
 	L.OPT_RAZ_TOUT = "RàZ tout (global)"
 	L.OPT_CREDITS = "Mécanisme inspiré de FarmHud (Hizuro) — réécriture yokoul. GPLv3."
