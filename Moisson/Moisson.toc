@@ -1,9 +1,9 @@
 ## Interface: 11508, 11509
 ## Title: Moisson
-## Notes: Full-screen harvest HUD with farm counters (session & global), bag view by profession and radar mode. Mechanism inspired by FarmHud (Hizuro) — full rewrite.
-## Notes-frFR: HUD de récolte plein écran avec compteurs de farm (session & global), besace par métier et mode radar. Mécanisme inspiré de FarmHud (Hizuro) — réécriture complète.
+## Notes: Full-screen harvest HUD with farm counters (session & global), account-wide stock (bags, bank, mailbox, alts), bag view by profession and radar mode. Mechanism inspired by FarmHud (Hizuro) — full rewrite.
+## Notes-frFR: HUD de récolte plein écran avec compteurs de farm (session & global), stocks du compte (sacs, banque, courrier, mules), besace par métier et mode radar. Mécanisme inspiré de FarmHud (Hizuro) — réécriture complète.
 ## Author: yokoul
-## Version: 0.9.2
+## Version: 0.10.0
 ## IconTexture: Interface\AddOns\Moisson\img\logo-medaillon.png
 ## SavedVariables: MoissonDB
 ## OptionalDeps: GatherMate2, Questie, ElvUI
@@ -13,6 +13,8 @@
 locales.lua
 core.lua
 donnees.lua
+stocks.lua
 compteurs.lua
+fenetre.lua
 bouton.lua
 options.lua

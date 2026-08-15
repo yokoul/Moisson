@@ -1,14 +1,15 @@
--- Moisson — familles de matériaux de Classic Era, par itemID.
--- Nécessaire : la DB2 du client Era classe presque tout en « Trade Goods »
--- générique (classe 7, sous-classe 0) — la sous-classe est inutilisable pour
--- catégoriser. Le contenu Era étant figé, on embarque les listes.
+-- Moisson — familles de matériaux de Classic Era, par itemID, et catégories
+-- de récolte partagées (compteurs, stocks, fenêtre de bilan).
+-- Les listes sont nécessaires : la DB2 du client Era classe presque tout en
+-- « Trade Goods » générique (classe 7, sous-classe 0) — la sous-classe est
+-- inutilisable pour catégoriser. Le contenu Era étant figé, on les embarque.
 -- IDs vérifiés contre items.db (dump wago.tools + API Blizzard, name_fr).
 
 local ADDON, ns = ...
 
-local L = {}
+local FAM = {}
 local function ajoute(cat, ids)
-	for _, id in ipairs(ids) do L[id] = cat end
+	for _, id in ipairs(ids) do FAM[id] = cat end
 end
 
 ajoute("herbes", {
@@ -161,4 +162,41 @@ ajoute("elems", {
 	17011, -- Noyau de lave
 })
 
-ns.FAMILLES = L
+ns.FAMILLES = FAM
+
+-- ---------------------------------------------------------------- catégories --
+
+-- Le tri fiable vient des listes ci-dessus ; les sous-classes modernes restent
+-- en repli et toute marchandise inconnue part en « autres ».
+local L = ns.L
+
+ns.CATS = {
+	herbes   = { nom = L.CAT_HERBES,   icone = "Interface\\Icons\\Trade_Herbalism" },
+	minerais = { nom = L.CAT_MINERAIS, icone = "Interface\\Icons\\Trade_Mining" },
+	gemmes   = { nom = L.CAT_GEMMES,   icone = "Interface\\Icons\\INV_Misc_Gem_01" },
+	cuirs    = { nom = L.CAT_CUIRS,    icone = "Interface\\Icons\\INV_Misc_LeatherScrap_02" },
+	tissus   = { nom = L.CAT_TISSUS,   icone = "Interface\\Icons\\INV_Fabric_Linen_01" },
+	viandes  = { nom = L.CAT_VIANDES,  icone = "Interface\\Icons\\INV_Misc_Food_14" },
+	elems    = { nom = L.CAT_ELEMS,    icone = "Interface\\Icons\\INV_Stone_05" },
+	autres   = { nom = L.CAT_AUTRES,   icone = "Interface\\Icons\\INV_Misc_Bag_08" },
+}
+ns.ORDRE_CATS = { "herbes", "minerais", "gemmes", "cuirs", "tissus", "viandes",
+	"elems", "autres" }
+
+local SUB7 = { [9] = "herbes", [7] = "minerais", [6] = "cuirs", [5] = "tissus",
+	[8] = "viandes", [10] = "elems" }
+
+function ns.Categorie(id, classID, subClassID)
+	local fam = FAM[id]
+	if fam then return fam end
+	if classID == 7 then return SUB7[subClassID] or "autres" end
+	if classID == 3 then return "gemmes" end
+end
+
+local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
+
+-- variante « je n'ai que l'itemID » : renvoie la catégorie et l'icône
+function ns.CategorieDe(id)
+	local _, _, _, _, icone, classID, subClassID = GetItemInfoInstant(id)
+	return ns.Categorie(id, classID, subClassID), icone
+end

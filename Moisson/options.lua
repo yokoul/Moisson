@@ -10,6 +10,11 @@ local COCHES = {
 	{ cle = "cardinaux", txt = L.OPT_CARDINAUX },
 	{ cle = "coords",    txt = L.OPT_COORDS },
 	{ cle = "compteurs", txt = L.OPT_COMPTEURS },
+	{ cle = "stockcompte", txt = L.OPT_STOCKCOMPTE },
+	-- la portée vit en clair dans la base (royaume | tout) : la coche ne voit
+	-- que « tous les royaumes »
+	{ cle = "portee",    txt = L.OPT_PORTEE,
+		lit = function() return ns.db.portee == "tout" end },
 	{ cle = "sourisalt", txt = L.OPT_SOURISALT },
 	{ cle = "combat",    txt = L.OPT_COMBAT },
 }
@@ -52,7 +57,11 @@ function ns.InitOptions()
 		cb:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -8)
 		cb:SetSize(24, 24)
 		_G[cb:GetName() .. "Text"]:SetText(def.txt)
-		cb:SetChecked(ns.db[def.cle])
+		if def.lit then
+			cb:SetChecked(def.lit())
+		else
+			cb:SetChecked(ns.db[def.cle])
+		end
 		cb:SetScript("OnClick", function(self)
 			ns.Apply[def.cle](self:GetChecked() and true or false)
 		end)
@@ -159,8 +168,16 @@ function ns.InitOptions()
 	razTout:SetText(L.OPT_RAZ_TOUT)
 	razTout:SetScript("OnClick", function() if ns.Raz then ns.Raz(true) end end)
 
+	local stocks = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+	stocks:SetSize(328, 22)
+	stocks:SetPoint("TOPLEFT", razSession, "BOTTOMLEFT", 0, -8)
+	stocks:SetText(L.OPT_STOCKS)
+	stocks:SetScript("OnClick", function()
+		if ns.OuvrirStocks then ns.OuvrirStocks(true) end
+	end)
+
 	local credits = content:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	credits:SetPoint("TOPLEFT", razSession, "BOTTOMLEFT", 0, -24)
+	credits:SetPoint("TOPLEFT", stocks, "BOTTOMLEFT", 0, -24)
 	credits:SetText(L.OPT_CREDITS)
 
 	-- nouvelle API Settings (1.15) avec repli sur l'ancienne

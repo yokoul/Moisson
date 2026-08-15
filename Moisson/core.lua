@@ -27,6 +27,8 @@ local DEFAUTS = {
 	cardinaux = true,
 	cardalpha = 0.5,   -- transparence des points cardinaux
 	compteurs = true,
+	stockcompte = true, -- 3e colonne : ce que le compte entier possède
+	portee    = "royaume", -- stocks comptés : royaume | tout
 	sourisalt = true,  -- souris fugace : active tant qu'Alt est enfoncée
 	combat    = false, -- masquer le HUD en combat (comme FarmHud : non par défaut)
 	bouton_angle = 200, -- position du bouton minimap
@@ -335,6 +337,9 @@ function Moisson_ToggleMouse(force)
 	sourisVoulue = enable
 	MT.EnableMouse(Minimap, enable)
 	sourisFS:SetShown(enable)
+	-- les lignes de compteurs deviennent survolables en même temps : hors de
+	-- ce mode, elles bloqueraient les clics de jeu dans le coin gauche
+	if ns.CompteursSouris then ns.CompteursSouris(enable) end
 end
 
 -- application du mode de fond courant (invisible / radar / carte)
@@ -510,6 +515,7 @@ hud:SetScript("OnHide", function(self)
 	fleche:Hide()
 	sourisFS:Hide()
 	sourisVoulue = false
+	if ns.CompteursSouris then ns.CompteursSouris(false) end
 
 	ForeignPins(false)
 	cluster:Hide()
@@ -633,6 +639,17 @@ ns.Apply = {
 	compteurs = function(v)
 		db.compteurs = v
 		if hud:IsShown() and ns.CompteursOnShow then ns.CompteursOnShow() end
+	end,
+	stockcompte = function(v)
+		db.stockcompte = v
+		if ns.StocksChanges then ns.StocksChanges() end
+	end,
+	portee = function(v)
+		-- coche booléenne côté options, chaîne côté base
+		if type(v) == "boolean" then v = v and "tout" or "royaume" end
+		db.portee = v
+		if ns.StocksChanges then ns.StocksChanges() end
+		if ns.FenetrePortee then ns.FenetrePortee() end
 	end,
 	sourisalt = function(v)
 		db.sourisalt = v
@@ -759,8 +776,15 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
 			MoissonDB.opts.boutons = nil
 			MoissonDB.version = 6
 		end
+		-- v7 : stocks par personnage (sacs, banque, boîte aux lettres)
+		if MoissonDB.version < 7 then
+			MoissonDB.persos = MoissonDB.persos or {}
+			MoissonDB.compte = MoissonDB.compte or L.COMPTE_DEFAUT
+			MoissonDB.version = 7
+		end
 		db = MoissonDB.opts
 		ns.db = db
+		if ns.InitStocks then ns.InitStocks() end
 		if ns.InitCompteurs then ns.InitCompteurs() end
 		if ns.InitBoutonMinimap then ns.InitBoutonMinimap() end
 		if ns.InitOptions then ns.InitOptions() end
@@ -794,14 +818,18 @@ end
 local ALIAS = {
 	mouse = "souris", background = "fond", size = "taille", scale = "echelle",
 	counters = "compteurs", summary = "bilan", log = "journal", reset = "raz",
-	help = "aide", all = "tout",
+	help = "aide", all = "tout", stock = "stocks", scope = "portee",
+	account = "compte", forget = "oublie", realm = "royaume",
 }
 
 SLASH_MOISSON1 = "/moisson"
 SlashCmdList["MOISSON"] = function(input)
-	input = (input or ""):lower():gsub("^%s+", "")
-	local cmd, arg = input:match("^(%S*)%s*(.*)$")
+	-- l'argument garde sa casse : ce peut être un nom de perso ou de compte
+	local brut = (input or ""):gsub("^%s+", ""):gsub("%s+$", "")
+	local cmd, argBrut = brut:match("^(%S*)%s*(.-)$")
+	cmd = cmd:lower()
 	cmd = ALIAS[cmd] or cmd
+	local arg = argBrut:lower()
 	arg = ALIAS[arg] or arg
 	if cmd == "" then
 		Moisson_Toggle()
@@ -849,6 +877,36 @@ SlashCmdList["MOISSON"] = function(input)
 	elseif cmd == "compteurs" then
 		ns.Apply.compteurs(not db.compteurs)
 		print_(db.compteurs and L.COMPTEURS_ON or L.COMPTEURS_OFF)
+	elseif cmd == "stocks" then
+		if ns.OuvrirStocks then ns.OuvrirStocks() end
+	elseif cmd == "portee" then
+		if arg == "tout" or arg == "royaume" then
+			ns.Apply.portee(arg)
+		else
+			ns.Apply.portee(db.portee == "tout" and "royaume" or "tout")
+		end
+		print_(L.VAL_PORTEE:format(db.portee == "tout"
+			and L.PORTEE_TOUT or L.PORTEE_ROYAUME))
+	elseif cmd == "export" then
+		if ns.OuvrirEchange then ns.OuvrirEchange("export") end
+	elseif cmd == "import" then
+		if ns.OuvrirEchange then ns.OuvrirEchange("import") end
+	elseif cmd == "compte" then
+		if argBrut ~= "" then
+			MoissonDB.compte = argBrut
+			print_(L.COMPTE_NOM:format(argBrut))
+			if ns.StocksChanges then ns.StocksChanges() end
+		else
+			print_(L.COMPTE_ACTUEL:format(MoissonDB.compte or "?"))
+		end
+	elseif cmd == "oublie" then
+		-- effacer toute la base se demande explicitement : « oublie tout »
+		if argBrut == "" then
+			print_(L.OUBLI_USAGE)
+		elseif ns.Oublier then
+			local n = ns.Oublier(arg ~= "tout" and argBrut or nil)
+			print_(n > 0 and L.OUBLI_TOUT:format(n) or L.OUBLI_RIEN)
+		end
 	elseif cmd == "bilan" then
 		if ns.Bilan then ns.Bilan() end
 	elseif cmd == "debug" then

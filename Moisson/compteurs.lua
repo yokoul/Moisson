@@ -12,29 +12,10 @@ local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
 local GetItemCount = (C_Item and C_Item.GetItemCount) or _G.GetItemCount
 local L = ns.L
 
--- catégories de farm. Le tri fiable vient des listes d'itemIDs (donnees.lua) :
--- la DB2 d'Era classe presque tout en 7/0 générique. Les sous-classes
--- modernes restent en repli, et toute marchandise inconnue part en « autres ».
-local CATS = {
-	herbes   = { nom = L.CAT_HERBES,   icone = "Interface\\Icons\\Trade_Herbalism" },
-	minerais = { nom = L.CAT_MINERAIS, icone = "Interface\\Icons\\Trade_Mining" },
-	gemmes   = { nom = L.CAT_GEMMES,   icone = "Interface\\Icons\\INV_Misc_Gem_01" },
-	cuirs    = { nom = L.CAT_CUIRS,    icone = "Interface\\Icons\\INV_Misc_LeatherScrap_02" },
-	tissus   = { nom = L.CAT_TISSUS,   icone = "Interface\\Icons\\INV_Fabric_Linen_01" },
-	viandes  = { nom = L.CAT_VIANDES,  icone = "Interface\\Icons\\INV_Misc_Food_14" },
-	elems    = { nom = L.CAT_ELEMS,    icone = "Interface\\Icons\\INV_Stone_05" },
-	autres   = { nom = L.CAT_AUTRES,   icone = "Interface\\Icons\\INV_Misc_Bag_08" },
-}
-local ORDRE_CATS = { "herbes", "minerais", "gemmes", "cuirs", "tissus", "viandes", "elems", "autres" }
-local SUB7 = { [9] = "herbes", [7] = "minerais", [6] = "cuirs", [5] = "tissus",
-	[8] = "viandes", [10] = "elems" }
-
-local function Categorie(id, classID, subClassID)
-	local fam = ns.FAMILLES and ns.FAMILLES[id]
-	if fam then return fam end
-	if classID == 7 then return SUB7[subClassID] or "autres" end
-	if classID == 3 then return "gemmes" end
-end
+-- catégories de farm : définies une fois dans donnees.lua, partagées avec les
+-- stocks et la fenêtre de bilan
+local CATS, ORDRE_CATS = ns.CATS, ns.ORDRE_CATS
+local Categorie = ns.Categorie
 
 local session = {}      -- [itemID] = quantité depuis la connexion
 local sessionCats = {}  -- [cat] = quantité
@@ -114,30 +95,10 @@ end
 
 local function ScanBesace(voulu)
 	local totaux = {} -- [itemID] = { n, icone, cat }
-	for sac = 0, 4 do
-		local slots = (C_Container and C_Container.GetContainerNumSlots(sac))
-			or (GetContainerNumSlots and GetContainerNumSlots(sac)) or 0
-		for slot = 1, slots do
-			local id, n
-			if C_Container and C_Container.GetContainerItemInfo then
-				local info = C_Container.GetContainerItemInfo(sac, slot)
-				if info then id, n = info.itemID, info.stackCount end
-			elseif GetContainerItemInfo then
-				local _, count, _, _, _, _, _, _, _, itemID = GetContainerItemInfo(sac, slot)
-				id, n = itemID, count
-			end
-			if id then
-				local _, _, _, _, icone, classID, subClassID = GetItemInfoInstant(id)
-				local cat = Categorie(id, classID, subClassID)
-				if cat and voulu[cat] then
-					local t = totaux[id]
-					if not t then
-						t = { n = 0, icone = icone, cat = cat }
-						totaux[id] = t
-					end
-					t.n = t.n + (n or 1)
-				end
-			end
+	for id, n in pairs(ns.ScanConteneurs(ns.SACS_PORTES)) do
+		local cat, icone = ns.CategorieDe(id)
+		if cat and voulu[cat] then
+			totaux[id] = { n = n, icone = icone, cat = cat }
 		end
 	end
 	return totaux
@@ -146,6 +107,40 @@ end
 -- ------------------------------------------------------------------ panneau --
 
 local panel  -- construit paresseusement (a besoin de ns.hud)
+local souris = false -- le HUD est transparent aux clics tant qu'on ne la demande pas
+
+-- Carré invisible posé sur la seule icône en tête de ligne : c'est elle qui
+-- reçoit le survol et sort le tooltip de répartition. Réduire le déclencheur à
+-- l'icône évite un tooltip permanent dès qu'on traverse le panneau, et laisse
+-- le reste de la ligne transparent. La zone ne mange d'ailleurs la souris que
+-- lorsque le HUD l'a activée (Alt maintenue ou /moisson souris) — sinon elle
+-- bloquerait les clics de jeu dans le coin gauche de l'écran.
+local TAILLE_ICONE = 18
+
+local function ZoneSurvol(parent, ancre)
+	local z = CreateFrame("Button", nil, parent)
+	z:SetPoint("LEFT", ancre, "LEFT", -1, 0)
+	z:SetSize(TAILLE_ICONE, TAILLE_ICONE)
+	z:EnableMouse(souris)
+	z:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+	z:SetScript("OnEnter", function(self)
+		if not self.id then return end
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		ns.TooltipStock(GameTooltip, self.id)
+	end)
+	z:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	z:Hide()
+	return z
+end
+
+-- suit l'interrupteur de souris du HUD (core.lua)
+function ns.CompteursSouris(on)
+	souris = on and true or false
+	if not panel then return end
+	for i = 1, MAX_LIGNES do panel.zones[i]:EnableMouse(souris) end
+	for i = 1, MAX_SACS do panel.sacZones[i]:EnableMouse(souris) end
+	if not souris then GameTooltip:Hide() end
+end
 
 local function BuildPanel()
 	panel = CreateFrame("Frame", "MoissonCompteurs", ns.hud)
@@ -161,13 +156,14 @@ local function BuildPanel()
 	panel.resume:SetPoint("TOPLEFT", panel.titre, "BOTTOMLEFT", 0, -4)
 	panel.resume:SetJustifyH("LEFT")
 
-	panel.lignes = {}
+	panel.lignes, panel.zones = {}, {}
 	local prev = panel.resume
 	for i = 1, MAX_LIGNES do
 		local fs = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 		fs:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, i == 1 and -6 or -4)
 		fs:SetJustifyH("LEFT")
 		panel.lignes[i] = fs
+		panel.zones[i] = ZoneSurvol(panel, fs)
 		prev = fs
 	end
 
@@ -175,13 +171,14 @@ local function BuildPanel()
 	panel.sacTitre:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -12)
 	panel.sacTitre:SetText(L.TITRE_BESACE)
 
-	panel.sacLignes = {}
+	panel.sacLignes, panel.sacZones = {}, {}
 	prev = panel.sacTitre
 	for i = 1, MAX_SACS do
 		local fs = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 		fs:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, i == 1 and -6 or -4)
 		fs:SetJustifyH("LEFT")
 		panel.sacLignes[i] = fs
+		panel.sacZones[i] = ZoneSurvol(panel, fs)
 		prev = fs
 	end
 	panel:Hide()
@@ -212,7 +209,9 @@ local function Refresh()
 	table.sort(tri, function(a, b) return a.n > b.n end)
 
 	for i = 1, MAX_LIGNES do
-		local fs, item = panel.lignes[i], tri[i]
+		local fs, item, zone = panel.lignes[i], tri[i], panel.zones[i]
+		zone.id = item and item.id or nil
+		zone:SetShown(item ~= nil)
 		if item then
 			local rec = MoissonDB.objets[item.id]
 			local icone = rec and rec.icone or 134400
@@ -220,13 +219,22 @@ local function Refresh()
 			-- « en sac » vient des sacs réels : les stacks d'avant l'addon
 			-- comptent aussi (le total, lui, ne cumule que ce qu'on a vu passer)
 			local sac = GetItemCount and GetItemCount(item.id) or 0
-			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r |cff7fbf3f· %d|r  %s",
-				icone, item.n, sac, nom)
+			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r |cff7fbf3f· %d|r%s  %s",
+				icone, item.n, sac, ns.ColonneCompte(item.id, sac), nom)
 			fs:Show()
 		else
 			fs:Hide()
 		end
 	end
+end
+
+-- Troisième colonne : ce que le compte entier possède de cet objet. On la tait
+-- quand elle répète la deuxième (rien ailleurs que dans les sacs d'ici).
+function ns.ColonneCompte(id, sac)
+	if not ns.db.stockcompte or not ns.StockDe then return "" end
+	local total = ns.StockDe(id)
+	if total <= (sac or 0) then return "" end
+	return string.format(" |cff6a9fd8· %d|r", total)
 end
 
 local function RefreshBesace()
@@ -236,7 +244,10 @@ local function RefreshBesace()
 	if not voulu then
 		-- pas de métier de récolte connu : le volet se tait
 		panel.sacTitre:Hide()
-		for i = 1, MAX_SACS do panel.sacLignes[i]:Hide() end
+		for i = 1, MAX_SACS do
+			panel.sacLignes[i]:Hide()
+			panel.sacZones[i]:Hide()
+		end
 		return
 	end
 	panel.sacTitre:Show()
@@ -249,10 +260,13 @@ local function RefreshBesace()
 	table.sort(tri, function(a, b) return a.n > b.n end)
 
 	for i = 1, MAX_SACS do
-		local fs, item = panel.sacLignes[i], tri[i]
+		local fs, item, zone = panel.sacLignes[i], tri[i], panel.sacZones[i]
+		zone.id = item and item.id or nil
+		zone:SetShown(item ~= nil)
 		if item then
 			local nom = GetItemInfo(item.id) or L.OBJET_INCONNU:format(item.id)
-			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r  %s", item.icone, item.n, nom)
+			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r%s  %s",
+				item.icone, item.n, ns.ColonneCompte(item.id, item.n), nom)
 			fs:Show()
 		else
 			fs:Hide()
@@ -318,18 +332,35 @@ function ns.CompteursOnHide()
 	if panel then panel:Hide() end
 end
 
+-- appelé par stocks.lua après chaque relevé (sacs, banque, courrier, import)
+function ns.StocksChanges()
+	Refresh()
+	RefreshBesace()
+	if ns.FenetreRefresh then ns.FenetreRefresh() end
+end
+
 function ns.Bilan()
 	ns.print(L.BILAN_TITRE)
+	local stocks, lieux = ns.StockParCategorie and ns.StockParCategorie()
 	local rien = true
 	for _, cat in ipairs(ORDRE_CATS) do
 		local s, g = sessionCats[cat] or 0, MoissonDB.cats[cat] or 0
-		if s > 0 or g > 0 then
+		local e = stocks and stocks[cat] or 0
+		if s > 0 or g > 0 or e > 0 then
 			rien = false
-			ns.print(string.format("  |T%s:14|t %s : %d · %d",
-				CATS[cat].icone, CATS[cat].nom, s, g))
+			ns.print(string.format("  |T%s:14|t %s : %d · %d · |cff6a9fd8%d|r",
+				CATS[cat].icone, CATS[cat].nom, s, g, e))
 		end
 	end
-	if rien then ns.print(L.BILAN_VIDE) end
+	if rien then
+		ns.print(L.BILAN_VIDE)
+		return
+	end
+	if lieux then
+		ns.print(L.BILAN_LIEUX:format(lieux.sacs, lieux.banque, lieux.malle))
+		ns.print(L.BILAN_PORTEE:format(ns.db.portee == "tout"
+			and L.PORTEE_TOUT or L.PORTEE_ROYAUME))
+	end
 end
 
 function ns.Raz(tout)
