@@ -21,6 +21,14 @@ de récolte qui n'existent pas dans l'original.
 - **Besace** : ce que les sacs contiennent pour le(s) métier(s) de récolte du
   personnage (herboristerie → herbes, minage → minerais et gemmes,
   dépeçage → cuirs).
+- **Stocks du compte** : sacs, banque et boîte aux lettres de chaque
+  personnage, conservés d'une session à l'autre. Les sacs suivent en temps
+  réel, la banque et le courrier sont relevés à chaque passage — le client
+  n'en sait rien tant qu'on ne les a pas ouverts. Une troisième colonne dans
+  le HUD donne le total du compte ; **Alt maintenue, le survol d'une ligne**
+  dit qui détient ces stocks et où (sacs, banque, courrier). `/moisson stocks`
+  ouvre le détail complet par personnage et par lieu. Plusieurs comptes WoW se fusionnent par
+  copier-coller (`/moisson export` puis `import` sur l'autre compte).
 - **Mode radar** : le fond de carte cycle entre invisible, radar (alpha
   modéré + voile noir : les détections « Trouver les herbes/minerais »
   restent visibles sur terrain éteint) et carte.
@@ -39,6 +47,12 @@ de récolte qui n'existent pas dans l'original.
 /moisson taille 0.9   fraction de l'écran (0.3 à 1)
 /moisson alpha 0.25   transparence du fond (0 à 1)
 /moisson compteurs    panneau de récolte on/off
+/moisson stocks       fenêtre des stocks du compte
+/moisson portee       ce royaume ou tous les royaumes
+/moisson export       copier les stocks de ce compte
+/moisson import       coller ceux d'un autre compte
+/moisson compte <nom> nommer ce compte
+/moisson oublie <perso>  retirer un perso des stocks
 /moisson bilan        totaux par catégorie en chat
 /moisson raz [tout]   remise à zéro session (ou tout)
 ```

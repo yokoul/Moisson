@@ -9,7 +9,7 @@ https://authors.curseforge.com (Create a Project → World of Warcraft).
 |---|---|
 | Name | Moisson |
 | Slug (URL) | moisson |
-| Summary | Full-screen harvest HUD for Classic Era with farm counters — session, bags and per-category totals. |
+| Summary | Full-screen harvest HUD for Classic Era with farm counters and account-wide stock — session, bags, bank, mailbox and alts. |
 | Primary Category | Map & Minimap |
 | Secondary Category | Professions |
 | Game Version | 1.15.8 (Classic Era — cocher les versions 1.15.x proposées) |
@@ -47,6 +47,12 @@ do not exist in the original.
   totals with `/moisson summary`.
 - **Bags panel** — what your bags hold for your gathering professions
   (herbalism → herbs, mining → ores and gems, skinning → leather).
+- **Account-wide stock** — bags, bank and mailbox of every character you
+  play, kept between sessions: `/moisson stock` tells you who holds what and
+  where, and an extra column in the HUD gives the account total at a glance —
+  hold Alt and hover a counter line to see the breakdown without leaving the
+  HUD. Several WoW accounts can be merged by copy-paste (`/moisson export` /
+  `import`).
 - **Radar mode** — background cycles between hidden, radar (tracking dots
   from Find Herbs/Minerals stay visible over a dimmed terrain) and map.
 - **Transient mouse** — hold Alt to inspect pins under the cursor, release
@@ -79,6 +85,12 @@ WoW Classic Era — et compte tout ce que vous ramassez.
   quantité réellement en sac (stocks antérieurs compris). Totaux globaux par
   catégorie via `/moisson bilan`.
 - **Besace** : le contenu des sacs pour vos métiers de récolte.
+- **Stocks du compte** : sacs, banque et boîte aux lettres de chacun de vos
+  personnages, conservés d'une session à l'autre. `/moisson stocks` dit qui
+  détient quoi et où, et une colonne de plus dans le HUD donne le total du
+  compte d'un coup d'œil — Alt maintenue, le survol d'une ligne montre la
+  répartition sans quitter le HUD. Plusieurs comptes WoW se fusionnent par
+  copier-coller (`/moisson export` / `import`).
 - **Mode radar** : fond invisible, radar (détections visibles sur terrain
   éteint) ou carte ; rotation optionnelle avec points cardinaux.
 - **Souris fugace** : Alt maintenue = souris pour inspecter les pins.
@@ -90,7 +102,41 @@ Mécanisme inspiré de FarmHud (Hizuro) — réécriture complète. GPLv3.
 
 ---
 
-## Changelog v0.9.2 (champ « changelog » de l'upload)
+## Changelog v0.10.0 (champ « changelog » de l'upload)
+
+```
+Account-wide stock
+
+- Bank, mailbox and alts are now counted, not just the bags you carry.
+  Bags update live; bank and mail are recorded each time you open them.
+- New "account" column in the harvest panel — quiet when there is nothing
+  beyond your own bags. Hold Alt and hover a line: the tooltip names who
+  holds the stock and where (bags, bank, mail).
+- New window /moisson stock: who holds what and where, filter by category,
+  this realm or all realms.
+- Several WoW accounts merge by copy-paste: /moisson export, then import.
+- /moisson summary now breaks the stock down by category and location.
+```
+
+**Version française (champ localisé, si tu en ajoutes un) :**
+
+```
+Stocks du compte
+
+- La banque, la boîte aux lettres et les autres persos comptent enfin, et
+  plus seulement les sacs qu'on porte. Les sacs suivent en temps réel ; la
+  banque et le courrier sont relevés à chaque passage.
+- Nouvelle colonne « compte » dans le panneau de récolte — muette quand il
+  n'y a rien au-delà de vos propres sacs. Alt maintenue, le survol d'une
+  ligne dit qui détient ces stocks et où (sacs, banque, courrier).
+- Nouvelle fenêtre /moisson stocks : qui détient quoi et où, filtre par
+  catégorie, ce royaume ou tous les royaumes.
+- Plusieurs comptes WoW se fusionnent par copier-coller : /moisson export,
+  puis import sur l'autre.
+- /moisson bilan détaille désormais les stocks par catégorie et par lieu.
+```
+
+## Changelog v0.9.2
 
 Correctifs uniquement — aucune fonctionnalité nouvelle.
 
