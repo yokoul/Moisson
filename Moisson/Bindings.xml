@@ -8,4 +8,7 @@
 	<Binding name="MOISSON_FOND" category="ADDONS">
 		Moisson_ToggleFond()
 	</Binding>
+	<Binding name="MOISSON_REPLIER" category="ADDONS">
+		Moisson_ToggleReplier()
+	</Binding>
 </Bindings>

@@ -17,6 +17,7 @@ local L = {
 	BIND_TOGGLE = "Show / hide the HUD",
 	BIND_MOUSE = "Toggle mouse (HUD open)",
 	BIND_FOND = "Cycle map background (HUD open)",
+	BIND_REPLIER = "Fold / unfold the harvest panel",
 
 	-- bouton minimap
 	MMB_TIP = "Left click: HUD · Right click: options",
@@ -27,7 +28,8 @@ local L = {
 	CAT_HERBES = "Herbs", CAT_MINERAIS = "Ores", CAT_GEMMES = "Gems",
 	CAT_CUIRS = "Leather", CAT_TISSUS = "Cloth", CAT_VIANDES = "Meat",
 	CAT_ELEMS = "Elementals", CAT_AUTRES = "Other",
-	TITRE_RECOLTE = "|cff7fbf3fHarvest|r  |cff808080session · |r|cff7fbf3fbags|r|cff808080 · |r|cff6a9fd8account|r",
+	TITRE_RECOLTE = "|cff7fbf3fHarvest|r",
+	LEGENDE_COLONNES = "|cffffd200session|r |cff808080·|r |cff7fbf3fbags|r |cff808080·|r |cff6a9fd8account|r",
 	TITRE_BESACE = "|cff7fbf3fBags|r  |cff808080by profession|r",
 	RIEN_SESSION = "|cff808080nothing this session|r",
 	OBJET_INCONNU = "item %d",
@@ -63,6 +65,8 @@ local L = {
 	TIP_MAJ_BANQUE = "bank recorded %s",
 	TIP_MAJ_MALLE = "mailbox recorded %s",
 	TIP_OUBLI = "right click: forget this character",
+	TIP_REPLIER = "click: fold the panel",
+	TIP_DEPLIER = "click: unfold the panel",
 	BTN_EXPORT = "Export",
 	BTN_IMPORT = "Import",
 	BTN_TOUT_SELECT = "Select all",
@@ -103,6 +107,7 @@ local L = {
 		"  /moisson rotation — fixed or rotating map",
 		"  /moisson size 0.3–1.2 · scale 1–2 · alpha 0–1 · cardalpha 0–1",
 		"  /moisson counters — harvest panel on/off",
+		"  /moisson fold — fold the panel · side left|right — which edge",
 		"  /moisson stock — bags, bank and mail of every character",
 		"  /moisson scope — this realm or all realms",
 		"  /moisson export · import — share stock between WoW accounts",
@@ -123,20 +128,35 @@ local L = {
 	VAL_ALPHA = "alpha: %s",
 	COMPTEURS_ON = "counters shown.",
 	COMPTEURS_OFF = "counters hidden.",
+	REPLIE_ON = "harvest panel folded — the radar is clear.",
+	REPLIE_OFF = "harvest panel unfolded.",
+	COTE_GAUCHE = "left", COTE_DROITE = "right",
+	VAL_COTE = "harvest panel on the %s.",
 	DEBUG_ON = "loot debug enabled — gather something and read the chat.",
 	DEBUG_OFF = "loot debug disabled.",
 
 	-- options
 	OPT_SOUSTITRE = "Full-screen harvest HUD — bindings below.  In game: /moisson help",
-	OPT_ROTATION = "Radar-style rotation (the map turns with the player)",
-	OPT_CARDINAUX = "Cardinal points (N/NE/E/…)",
+	OPT_GRP_HUD = "HUD",
+	OPT_GRP_PANNEAU = "Harvest panel",
+	OPT_GRP_APPARENCE = "Appearance",
+	OPT_GRP_RACCOURCIS = "Key bindings",
+	OPT_ROTATION = "Radar rotation",
+	OPT_ROTATION_AIDE = "The map turns with your character instead of staying north-up.",
+	OPT_CARDINAUX = "Cardinal points",
 	OPT_COORDS = "Player coordinates",
-	OPT_COMPTEURS = "Harvest counters panel",
-	OPT_STOCKCOMPTE = "Account column (bank, mail and other characters)",
-	OPT_PORTEE = "Count all realms, not just this one",
-	OPT_STOCKS = "Open the account stock window",
-	OPT_SOURISALT = "Mouse while Alt is held (hover identification)",
-	OPT_COMBAT = "Hide the HUD in combat",
+	OPT_COMPTEURS = "Show the panel",
+	OPT_REPLIE = "Fold it",
+	OPT_REPLIE_AIDE = "Keeps only the title and the session summary, clearing the view for the radar.",
+	OPT_COTE = "On the right of the HUD",
+	OPT_STOCKCOMPTE = "Account column",
+	OPT_STOCKCOMPTE_AIDE = "Adds what the whole account holds: bank, mailbox and other characters.",
+	OPT_PORTEE = "Count all realms",
+	OPT_PORTEE_AIDE = "Otherwise only the realm you are playing on is counted — the only one you can trade with.",
+	OPT_STOCKS = "Account stock",
+	OPT_SOURISALT = "Mouse while Alt is held",
+	OPT_SOURISALT_AIDE = "Hold Alt to hover pins and counter icons; release to keep control of your character.",
+	OPT_COMBAT = "Hide in combat",
 	OPT_TAILLE = "HUD size",
 	OPT_ECHELLE = "Pin magnification",
 	OPT_ALPHA = "Map background (hidden mode)",
@@ -147,6 +167,7 @@ local L = {
 	OPT_BIND_HUD = "Show / hide the HUD",
 	OPT_BIND_SOURIS = "Toggle mouse",
 	OPT_BIND_FOND = "Cycle map background",
+	OPT_BIND_REPLIER = "Fold / unfold the panel",
 	OPT_NON_DEFINI = "|cff808080not bound|r",
 	OPT_APPUIE = "press a key… (Esc: clear)",
 	OPT_BIND_COMBAT = "keybindings cannot be changed in combat.",
@@ -167,6 +188,7 @@ if GetLocale() == "frFR" then
 	L.BIND_TOGGLE = "Afficher / masquer le HUD"
 	L.BIND_MOUSE = "Basculer la souris (HUD ouvert)"
 	L.BIND_FOND = "Basculer le fond de carte (HUD ouvert)"
+	L.BIND_REPLIER = "Replier / déplier le panneau de récolte"
 
 	L.MMB_TIP = "Clic gauche : HUD · Clic droit : options"
 	L.MMB_TIP2 = "HUD ouvert — Maj-clic : fond · Clic molette : souris"
@@ -175,7 +197,8 @@ if GetLocale() == "frFR" then
 	L.CAT_HERBES = "Herbes"; L.CAT_MINERAIS = "Minerais"; L.CAT_GEMMES = "Gemmes"
 	L.CAT_CUIRS = "Cuirs"; L.CAT_TISSUS = "Tissus"; L.CAT_VIANDES = "Viandes"
 	L.CAT_ELEMS = "Élémentaires"; L.CAT_AUTRES = "Autres"
-	L.TITRE_RECOLTE = "|cff7fbf3fRécolte|r  |cff808080session · |r|cff7fbf3fen sac|r|cff808080 · |r|cff6a9fd8compte|r"
+	L.TITRE_RECOLTE = "|cff7fbf3fRécolte|r"
+	L.LEGENDE_COLONNES = "|cffffd200session|r |cff808080·|r |cff7fbf3fen sac|r |cff808080·|r |cff6a9fd8compte|r"
 	L.TITRE_BESACE = "|cff7fbf3fBesace|r  |cff808080selon le métier|r"
 	L.RIEN_SESSION = "|cff808080rien cette session|r"
 	L.OBJET_INCONNU = "objet %d"
@@ -202,6 +225,8 @@ if GetLocale() == "frFR" then
 	L.TIP_MAJ_BANQUE = "banque relevée le %s"
 	L.TIP_MAJ_MALLE = "courrier relevé le %s"
 	L.TIP_OUBLI = "clic droit : oublier ce personnage"
+	L.TIP_REPLIER = "clic : replier le panneau"
+	L.TIP_DEPLIER = "clic : déplier le panneau"
 	L.BTN_EXPORT = "Exporter"
 	L.BTN_IMPORT = "Importer"
 	L.BTN_TOUT_SELECT = "Tout sélectionner"
@@ -248,6 +273,7 @@ if GetLocale() == "frFR" then
 		"  /moisson rotation — carte fixe ou rotative",
 		"  /moisson taille 0.3–1.2 · echelle 1–2 · alpha 0–1 · cardalpha 0–1",
 		"  /moisson compteurs — panneau de récolte on/off",
+		"  /moisson replier — replier le panneau · cote gauche|droite — le bord",
 		"  /moisson stocks — sacs, banque et courrier de chaque perso",
 		"  /moisson portee — ce royaume ou tous les royaumes",
 		"  /moisson export · import — partager les stocks entre comptes WoW",
@@ -268,18 +294,33 @@ if GetLocale() == "frFR" then
 	L.VAL_ALPHA = "alpha : %s"
 	L.COMPTEURS_ON = "compteurs affichés."
 	L.COMPTEURS_OFF = "compteurs masqués."
+	L.REPLIE_ON = "panneau de récolte replié — le radar est dégagé."
+	L.REPLIE_OFF = "panneau de récolte déplié."
+	L.COTE_GAUCHE = "gauche"; L.COTE_DROITE = "droite"
+	L.VAL_COTE = "panneau de récolte à %s."
 	L.DEBUG_ON = "debug loot activé — ramasse quelque chose et lis le chat."
 	L.DEBUG_OFF = "debug loot désactivé."
 
 	L.OPT_SOUSTITRE = "HUD de récolte plein écran — raccourcis définissables ci-dessous.  En jeu : /moisson aide"
-	L.OPT_ROTATION = "Rotation façon radar (la carte tourne avec le joueur)"
-	L.OPT_CARDINAUX = "Points cardinaux (N/NE/E/…)"
+	L.OPT_GRP_HUD = "HUD"
+	L.OPT_GRP_PANNEAU = "Panneau de récolte"
+	L.OPT_GRP_APPARENCE = "Apparence"
+	L.OPT_GRP_RACCOURCIS = "Raccourcis clavier"
+	L.OPT_ROTATION = "Rotation façon radar"
+	L.OPT_ROTATION_AIDE = "La carte tourne avec le personnage au lieu de garder le nord en haut."
+	L.OPT_CARDINAUX = "Points cardinaux"
 	L.OPT_COORDS = "Coordonnées du joueur"
-	L.OPT_COMPTEURS = "Panneau des compteurs de récolte"
-	L.OPT_STOCKCOMPTE = "Colonne « compte » (banque, courrier et autres persos)"
-	L.OPT_PORTEE = "Compter tous les royaumes, pas seulement celui-ci"
-	L.OPT_STOCKS = "Ouvrir la fenêtre des stocks du compte"
-	L.OPT_SOURISALT = "Souris tant qu'Alt est enfoncée (identification au survol)"
+	L.OPT_COMPTEURS = "Afficher le panneau"
+	L.OPT_REPLIE = "Le replier"
+	L.OPT_REPLIE_AIDE = "Ne garde que le titre et le résumé de session : la vue se dégage pour le radar."
+	L.OPT_COTE = "À droite du HUD"
+	L.OPT_STOCKCOMPTE = "Colonne « compte »"
+	L.OPT_STOCKCOMPTE_AIDE = "Ajoute ce que possède le compte entier : banque, courrier et autres personnages."
+	L.OPT_PORTEE = "Compter tous les royaumes"
+	L.OPT_PORTEE_AIDE = "Sinon seul le royaume où vous jouez est compté — le seul avec lequel vous pouvez échanger."
+	L.OPT_STOCKS = "Stocks du compte"
+	L.OPT_SOURISALT = "Souris tant qu'Alt est enfoncée"
+	L.OPT_SOURISALT_AIDE = "Alt maintenue : survol des pins et des icônes de compteurs ; relâchée, vous gardez le contrôle du personnage."
 	L.OPT_COMBAT = "Masquer le HUD en combat"
 	L.OPT_TAILLE = "Taille du HUD"
 	L.OPT_ECHELLE = "Grossissement des pins"
@@ -291,6 +332,7 @@ if GetLocale() == "frFR" then
 	L.OPT_BIND_HUD = "Ouvrir / fermer le HUD"
 	L.OPT_BIND_SOURIS = "Basculer la souris"
 	L.OPT_BIND_FOND = "Basculer le fond de carte"
+	L.OPT_BIND_REPLIER = "Replier / déplier le panneau"
 	L.OPT_NON_DEFINI = "|cff808080non défini|r"
 	L.OPT_APPUIE = "appuie sur une touche… (Échap : effacer)"
 	L.OPT_BIND_COMBAT = "impossible de changer un raccourci en combat."

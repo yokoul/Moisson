@@ -119,8 +119,7 @@ local TAILLE_ICONE = 18
 
 local function ZoneSurvol(parent, ancre)
 	local z = CreateFrame("Button", nil, parent)
-	z:SetPoint("LEFT", ancre, "LEFT", -1, 0)
-	z:SetSize(TAILLE_ICONE, TAILLE_ICONE)
+	z:SetSize(TAILLE_ICONE, TAILLE_ICONE) -- placée par Placer(), selon le bord
 	z:EnableMouse(souris)
 	z:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
 	z:SetScript("OnEnter", function(self)
@@ -137,51 +136,148 @@ end
 function ns.CompteursSouris(on)
 	souris = on and true or false
 	if not panel then return end
+	panel.zoneTitre:EnableMouse(souris)
 	for i = 1, MAX_LIGNES do panel.zones[i]:EnableMouse(souris) end
 	for i = 1, MAX_SACS do panel.sacZones[i]:EnableMouse(souris) end
 	if not souris then GameTooltip:Hide() end
 end
 
+-- ------------------------------------------------------ placement et repli --
+
+local HAUTEUR = 20 + MAX_LIGNES * 18 + 30 + MAX_SACS * 18
+local H_REPLIE = 44 -- titre + résumé de session, rien d'autre
+
+-- Le panneau se pose contre un bord du HUD ; tout bascule en miroir, jusqu'aux
+-- icônes, pour qu'elles restent du côté du bord et que les lignes s'alignent
+-- proprement au lieu de partir en escalier vers le centre de l'écran.
+local function Placer()
+	if not panel then return end
+	local droite = ns.db.cote == "droite"
+	local bord = droite and "RIGHT" or "LEFT"
+	local haut = droite and "TOPRIGHT" or "TOPLEFT"
+	local bas  = droite and "BOTTOMRIGHT" or "BOTTOMLEFT"
+
+	panel:ClearAllPoints()
+	panel:SetPoint(bord, ns.hud, bord, droite and -24 or 24, 0)
+
+	local prev
+	for _, e in ipairs(panel.ordre) do
+		e.fs:ClearAllPoints()
+		if prev then
+			e.fs:SetPoint(haut, prev, bas, 0, e.dy)
+		else
+			e.fs:SetPoint(haut, panel, haut, 0, 0)
+		end
+		e.fs:SetJustifyH(droite and "RIGHT" or "LEFT")
+		if e.zone then
+			e.zone:ClearAllPoints()
+			e.zone:SetPoint(bord, e.fs, bord, droite and 1 or -1, 0)
+		end
+		prev = e.fs
+	end
+end
+
+-- Marqueur de pliage. Une vraie icône se repère bien mieux qu'un signe en
+-- texte, mais elle vient du client : si la texture manque, on retombe sur un
+-- « + » doré plutôt que d'afficher un carré vide.
+local ICONE_PLI = {
+	[true]  = "Interface\\Buttons\\UI-PlusButton-Up",  -- replié : on peut ouvrir
+	[false] = "Interface\\Buttons\\UI-MinusButton-Up",
+}
+local iconesOk
+
+local function Marqueur()
+	local replie = ns.db.replie and true or false
+	if iconesOk == nil then
+		local essai = UIParent:CreateTexture()
+		essai:SetTexture(ICONE_PLI[true])
+		iconesOk = essai:GetTexture() ~= nil
+		essai:Hide()
+	end
+	if iconesOk then return "|T" .. ICONE_PLI[replie] .. ":16|t" end
+	return "|cffffd200" .. (replie and "+" or "-") .. "|r"
+end
+
+-- Le titre porte le marqueur de repli, du côté du bord lui aussi. Replié, il
+-- se réduit au seul mot « Récolte » : la légende des colonnes n'a plus rien à
+-- légender, et le but du repli est justement de dégager la vue. Elle reste
+-- alors consultable au survol du titre.
+local function MajEntete()
+	if not panel then return end
+	local marque = Marqueur()
+	local nom = L.TITRE_RECOLTE
+	if not ns.db.replie then nom = nom .. "  " .. L.LEGENDE_COLONNES end
+	if ns.db.cote == "droite" then
+		panel.titre:SetText(nom .. " " .. marque)
+	else
+		panel.titre:SetText(marque .. " " .. nom)
+	end
+	panel:SetHeight(ns.db.replie and H_REPLIE or HAUTEUR)
+end
+
 local function BuildPanel()
 	panel = CreateFrame("Frame", "MoissonCompteurs", ns.hud)
-	panel:SetSize(260, 20 + MAX_LIGNES * 18 + 30 + MAX_SACS * 18)
-	panel:SetPoint("LEFT", ns.hud, "LEFT", 24, 0)
+	panel:SetSize(260, HAUTEUR)
 	panel:SetFrameLevel(20) -- au-dessus du cluster de pins (niveau 5)
 
+	panel.ordre = {} -- éléments dans l'ordre vertical, pour Placer()
+	local function ajoute(fs, dy, zone)
+		panel.ordre[#panel.ordre + 1] = { fs = fs, dy = dy, zone = zone }
+	end
+
 	panel.titre = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	panel.titre:SetPoint("TOPLEFT")
-	panel.titre:SetText(L.TITRE_RECOLTE)
+	ajoute(panel.titre, 0)
+
+	-- replier/déplier au clic : le titre est la poignée naturelle. Comme les
+	-- icônes, elle n'écoute qu'en mode souris ; le raccourci clavier et
+	-- /moisson replier marchent, eux, à tout moment.
+	panel.zoneTitre = CreateFrame("Button", nil, panel)
+	panel.zoneTitre:SetAllPoints(panel.titre)
+	panel.zoneTitre:EnableMouse(souris)
+	panel.zoneTitre:SetScript("OnClick", function() Moisson_ToggleReplier() end)
+	panel.zoneTitre:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:ClearLines()
+		GameTooltip:AddLine(ns.db.replie and L.TIP_DEPLIER or L.TIP_REPLIER,
+			1, 0.82, 0)
+		-- replié, le titre a perdu sa légende : on la rend ici
+		if ns.db.replie then GameTooltip:AddLine(L.LEGENDE_COLONNES) end
+		GameTooltip:Show()
+	end)
+	panel.zoneTitre:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 	panel.resume = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	panel.resume:SetPoint("TOPLEFT", panel.titre, "BOTTOMLEFT", 0, -4)
-	panel.resume:SetJustifyH("LEFT")
+	ajoute(panel.resume, -4)
 
 	panel.lignes, panel.zones = {}, {}
-	local prev = panel.resume
 	for i = 1, MAX_LIGNES do
 		local fs = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-		fs:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, i == 1 and -6 or -4)
-		fs:SetJustifyH("LEFT")
 		panel.lignes[i] = fs
 		panel.zones[i] = ZoneSurvol(panel, fs)
-		prev = fs
+		ajoute(fs, i == 1 and -6 or -4, panel.zones[i])
 	end
 
 	panel.sacTitre = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	panel.sacTitre:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -12)
 	panel.sacTitre:SetText(L.TITRE_BESACE)
+	ajoute(panel.sacTitre, -12)
 
 	panel.sacLignes, panel.sacZones = {}, {}
-	prev = panel.sacTitre
 	for i = 1, MAX_SACS do
 		local fs = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-		fs:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, i == 1 and -6 or -4)
-		fs:SetJustifyH("LEFT")
 		panel.sacLignes[i] = fs
 		panel.sacZones[i] = ZoneSurvol(panel, fs)
-		prev = fs
+		ajoute(fs, i == 1 and -6 or -4, panel.sacZones[i])
 	end
+
+	Placer()
+	MajEntete()
 	panel:Hide()
+end
+
+-- rejoués depuis les options (core.lua) quand le côté ou le repli changent
+function ns.CompteursPlacer()
+	Placer()
+	MajEntete()
 end
 
 -- résumé de session par catégorie (partagé avec le tooltip du bouton minimap)
@@ -196,10 +292,35 @@ function ns.SessionResume()
 	if #resume > 0 then return table.concat(resume, "   ") end
 end
 
+-- Une ligne se lit toujours dans le même ordre ; seule l'icône change de côté,
+-- pour rester contre le bord de l'écran.
+local function PoseLigne(fs, icone, chiffres, nom)
+	if ns.db.cote == "droite" then
+		fs:SetFormattedText("%s  %s |T%s:16|t", nom, chiffres, icone)
+	else
+		fs:SetFormattedText("|T%s:16|t %s  %s", icone, chiffres, nom)
+	end
+	fs:Show()
+end
+
+-- Replié, le panneau garde son titre et le résumé de session : la vue est
+-- dégagée sans qu'on devienne aveugle à ce qu'on ramasse.
+local function Vider(lignes, zones, n)
+	for i = 1, n do
+		lignes[i]:Hide()
+		zones[i]:Hide()
+	end
+end
+
 local function Refresh()
 	if not panel or not panel:IsShown() then return end
 
 	panel.resume:SetText(ns.SessionResume() or L.RIEN_SESSION)
+
+	if ns.db.replie then
+		Vider(panel.lignes, panel.zones, MAX_LIGNES)
+		return
+	end
 
 	-- lignes par objet, triées par récolte de session
 	local tri = {}
@@ -219,9 +340,8 @@ local function Refresh()
 			-- « en sac » vient des sacs réels : les stacks d'avant l'addon
 			-- comptent aussi (le total, lui, ne cumule que ce qu'on a vu passer)
 			local sac = GetItemCount and GetItemCount(item.id) or 0
-			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r |cff7fbf3f· %d|r%s  %s",
-				icone, item.n, sac, ns.ColonneCompte(item.id, sac), nom)
-			fs:Show()
+			PoseLigne(fs, icone, string.format("|cffffd200%d|r |cff7fbf3f· %d|r%s",
+				item.n, sac, ns.ColonneCompte(item.id, sac)), nom)
 		else
 			fs:Hide()
 		end
@@ -240,14 +360,17 @@ end
 local function RefreshBesace()
 	if not panel or not panel:IsShown() then return end
 
+	if ns.db.replie then
+		panel.sacTitre:Hide()
+		Vider(panel.sacLignes, panel.sacZones, MAX_SACS)
+		return
+	end
+
 	local voulu = CatsBesace()
 	if not voulu then
 		-- pas de métier de récolte connu : le volet se tait
 		panel.sacTitre:Hide()
-		for i = 1, MAX_SACS do
-			panel.sacLignes[i]:Hide()
-			panel.sacZones[i]:Hide()
-		end
+		Vider(panel.sacLignes, panel.sacZones, MAX_SACS)
 		return
 	end
 	panel.sacTitre:Show()
@@ -265,9 +388,8 @@ local function RefreshBesace()
 		zone:SetShown(item ~= nil)
 		if item then
 			local nom = GetItemInfo(item.id) or L.OBJET_INCONNU:format(item.id)
-			fs:SetFormattedText("|T%s:16|t |cffffd200%d|r%s  %s",
-				item.icone, item.n, ns.ColonneCompte(item.id, item.n), nom)
-			fs:Show()
+			PoseLigne(fs, item.icone, string.format("|cffffd200%d|r%s",
+				item.n, ns.ColonneCompte(item.id, item.n)), nom)
 		else
 			fs:Hide()
 		end

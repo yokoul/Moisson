@@ -27,6 +27,8 @@ local DEFAUTS = {
 	cardinaux = true,
 	cardalpha = 0.5,   -- transparence des points cardinaux
 	compteurs = true,
+	replie    = false, -- panneau réduit au titre et au résumé de session
+	cote      = "gauche", -- bord du HUD où il se pose : gauche | droite
 	stockcompte = true, -- 3e colonne : ce que le compte entier possède
 	portee    = "royaume", -- stocks comptés : royaume | tout
 	sourisalt = true,  -- souris fugace : active tant qu'Alt est enfoncée
@@ -375,6 +377,13 @@ function Moisson_ToggleFond()
 	print_(FOND_LIBELLE[db.fondmode])
 end
 
+-- Replie le panneau de récolte sur son titre : la vue se dégage sans quitter
+-- le HUD, et le résumé de session reste lisible.
+function Moisson_ToggleReplier()
+	ns.Apply.replie(not db.replie)
+	print_(db.replie and L.REPLIE_ON or L.REPLIE_OFF)
+end
+
 -- ------------------------------------------------------- ancrage plein écran --
 
 -- SetPoint peut lever « anchor family connection » selon ce que d'autres
@@ -581,6 +590,7 @@ BINDING_HEADER_MOISSON = "Moisson"
 BINDING_NAME_MOISSON_TOGGLE = L.BIND_TOGGLE
 BINDING_NAME_MOISSON_MOUSE = L.BIND_MOUSE
 BINDING_NAME_MOISSON_FOND = L.BIND_FOND
+BINDING_NAME_MOISSON_REPLIER = L.BIND_REPLIER
 
 -- ---------------------------------------------------- application des options --
 
@@ -638,6 +648,18 @@ ns.Apply = {
 	end,
 	compteurs = function(v)
 		db.compteurs = v
+		if hud:IsShown() and ns.CompteursOnShow then ns.CompteursOnShow() end
+	end,
+	replie = function(v)
+		db.replie = v
+		if ns.CompteursPlacer then ns.CompteursPlacer() end
+		if hud:IsShown() and ns.CompteursOnShow then ns.CompteursOnShow() end
+	end,
+	cote = function(v)
+		-- coche booléenne côté options, bord nommé côté base
+		if type(v) == "boolean" then v = v and "droite" or "gauche" end
+		db.cote = v
+		if ns.CompteursPlacer then ns.CompteursPlacer() end
 		if hud:IsShown() and ns.CompteursOnShow then ns.CompteursOnShow() end
 	end,
 	stockcompte = function(v)
@@ -820,6 +842,8 @@ local ALIAS = {
 	counters = "compteurs", summary = "bilan", log = "journal", reset = "raz",
 	help = "aide", all = "tout", stock = "stocks", scope = "portee",
 	account = "compte", forget = "oublie", realm = "royaume",
+	fold = "replier", collapse = "replier", side = "cote",
+	left = "gauche", right = "droite",
 }
 
 SLASH_MOISSON1 = "/moisson"
@@ -877,6 +901,15 @@ SlashCmdList["MOISSON"] = function(input)
 	elseif cmd == "compteurs" then
 		ns.Apply.compteurs(not db.compteurs)
 		print_(db.compteurs and L.COMPTEURS_ON or L.COMPTEURS_OFF)
+	elseif cmd == "replier" then
+		Moisson_ToggleReplier()
+	elseif cmd == "cote" then
+		if arg == "gauche" or arg == "droite" then
+			ns.Apply.cote(arg)
+		else
+			ns.Apply.cote(db.cote == "droite" and "gauche" or "droite")
+		end
+		print_(L.VAL_COTE:format(db.cote == "droite" and L.COTE_DROITE or L.COTE_GAUCHE))
 	elseif cmd == "stocks" then
 		if ns.OuvrirStocks then ns.OuvrirStocks() end
 	elseif cmd == "portee" then
