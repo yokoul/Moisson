@@ -29,6 +29,11 @@ de récolte qui n'existent pas dans l'original.
   dit qui détient ces stocks et où (sacs, banque, courrier). `/moisson stocks`
   ouvre le détail complet par personnage et par lieu. Plusieurs comptes WoW se fusionnent par
   copier-coller (`/moisson export` puis `import` sur l'autre compte).
+- **Panneau repliable** : le bloc de texte se replie sur son titre et le
+  résumé de session — la vue se dégage pour ne garder que le radar. Au
+  raccourci clavier, en clic sur le titre (souris active) ou via
+  `/moisson replier`. Il se pose au choix à gauche ou à droite du HUD,
+  icônes comprises : tout bascule en miroir.
 - **Mode radar** : le fond de carte cycle entre invisible, radar (alpha
   modéré + voile noir : les détections « Trouver les herbes/minerais »
   restent visibles sur terrain éteint) et carte.
@@ -47,6 +52,8 @@ de récolte qui n'existent pas dans l'original.
 /moisson taille 0.9   fraction de l'écran (0.3 à 1)
 /moisson alpha 0.25   transparence du fond (0 à 1)
 /moisson compteurs    panneau de récolte on/off
+/moisson replier      replier le panneau (radar dégagé)
+/moisson cote droite  bord du HUD : gauche ou droite
 /moisson stocks       fenêtre des stocks du compte
 /moisson portee       ce royaume ou tous les royaumes
 /moisson export       copier les stocks de ce compte

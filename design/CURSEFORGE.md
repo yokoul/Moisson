@@ -53,6 +53,9 @@ do not exist in the original.
   hold Alt and hover a counter line to see the breakdown without leaving the
   HUD. Several WoW accounts can be merged by copy-paste (`/moisson export` /
   `import`).
+- **Foldable panel** — the whole text block folds down to its title and
+  session summary when you want the radar and nothing else, and sits on
+  whichever edge of the HUD you prefer (everything mirrors, icons included).
 - **Radar mode** — background cycles between hidden, radar (tracking dots
   from Find Herbs/Minerals stay visible over a dimmed terrain) and map.
 - **Transient mouse** — hold Alt to inspect pins under the cursor, release
@@ -91,6 +94,9 @@ WoW Classic Era — et compte tout ce que vous ramassez.
   compte d'un coup d'œil — Alt maintenue, le survol d'une ligne montre la
   répartition sans quitter le HUD. Plusieurs comptes WoW se fusionnent par
   copier-coller (`/moisson export` / `import`).
+- **Panneau repliable** : tout le bloc de texte se replie sur son titre et le
+  résumé de session quand on ne veut que le radar, et se pose contre le bord
+  du HUD de votre choix (tout bascule en miroir, icônes comprises).
 - **Mode radar** : fond invisible, radar (détections visibles sur terrain
   éteint) ou carte ; rotation optionnelle avec points cardinaux.
 - **Souris fugace** : Alt maintenue = souris pour inspecter les pins.
@@ -102,7 +108,38 @@ Mécanisme inspiré de FarmHud (Hizuro) — réécriture complète. GPLv3.
 
 ---
 
-## Changelog v0.10.0 (champ « changelog » de l'upload)
+## Changelog v0.11.0 (champ « changelog » de l'upload)
+
+```
+Foldable panel, left or right
+
+- The harvest panel folds down to its title, clearing the view for those
+  who just want the radar for a while. The session summary stays. Use the
+  new keybinding, click the title (mouse active), or /moisson fold.
+- It can now sit on either edge of the HUD: everything mirrors, icons
+  included, so lines stay aligned against the screen edge.
+  Options → Moisson, or /moisson side left|right.
+- Settings page reorganised into sections over two columns, with hover
+  help on every option — it had grown into one long ribbon.
+```
+
+**Version française (champ localisé, si tu en ajoutes un) :**
+
+```
+Panneau repliable, à gauche ou à droite
+
+- Le panneau de récolte se replie sur son titre : la vue se dégage pour
+  ceux qui ne veulent que le radar par moment. Le résumé de session reste.
+  Nouveau raccourci clavier, clic sur le titre (souris active), ou
+  /moisson replier.
+- Il se pose désormais contre l'un ou l'autre bord du HUD : tout bascule en
+  miroir, icônes comprises, pour que les lignes restent alignées contre le
+  bord de l'écran. Options → Moisson, ou /moisson cote gauche|droite.
+- Page de réglages réorganisée en sections sur deux colonnes, avec une aide
+  au survol de chaque option — elle était devenue un long ruban.
+```
+
+## Changelog v0.10.0
 
 ```
 Account-wide stock
